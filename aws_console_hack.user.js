@@ -13,6 +13,7 @@
 // May want to figure out how ppl cache ajax generaly
 // Need to add volume data
 // Good idea to do js popup instead of full window popup
+// Might be cool to setup mimetype for .rdp file and button to launch rdp connection
 //
 
 
@@ -105,7 +106,7 @@ function gmAjax(obj){
 				var html = '<div id="info">';
 				html +=    '<b>Meta Data for: '+id+'</b><span id=close_tip>X</span>';
 				html +=	   '<p>'+ responseText +'</p>';
-				html +=		'<a href=http://'+dns+'>Link to server</a></div>';
+				html +=		'<a href=http://'+dns+'>Browse</a></div>';
 				console.log(responseText);
 				$('#info').remove();
 				$('body').stop().append(html).children('#info').hide().fadeIn(400);
