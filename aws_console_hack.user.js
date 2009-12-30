@@ -108,7 +108,10 @@ var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
 				html +=	   '<p>'+ responseText +'</p>';
 				var clippyObject = clippy(dns);
 				html += clippyObject;
-				html +=		'<a href=http://'+dns+'>Browse</a></div>';
+				if (dns != "")
+					{
+					html +=		'<a href=http://'+dns+'>Browse</a></div>';
+					}
 				console.log(responseText);
 				$('#info').remove();
 				$('body').stop().append(html).children('#info').hide().fadeIn(400);
