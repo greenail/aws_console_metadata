@@ -41,6 +41,7 @@ function gmAjax(obj){
  	var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
  	// insert css we will use for our tool tip stuff
 	var tipcss = "FAIL";
+	var dns = "FAIL";
 	var url = server_url;
 	url += "style.html";
 	console.log(url);
@@ -49,7 +50,7 @@ function gmAjax(obj){
 		method: 'GET',
 		onload: function(response){
 			tipcss = response.responseText;
-			console.log(tipcss);
+			//console.log(tipcss);
 			$('head').append(tipcss);
 			},
 		onerror: function(response){
@@ -79,7 +80,10 @@ function gmAjax(obj){
 			}
 		});
 	    $("td.yui-dt8-col-instanceId div span").hover(function (e) {
-		  
+		var rowIndex = $(this).parent().parent().parent().prevAll().length;
+		console.log(rowIndex);
+		var $trs = $(this).parent().parent().parent();
+		var dns = $trs.children('td.yui-dt8-col-dnsName').text();
 		var id = $(this).text();
 		id = jQuery.trim(id);
 		var log = "Hovering over Instance ID: ";
@@ -101,7 +105,7 @@ function gmAjax(obj){
 				var html = '<div id="info">';
 				html +=    '<b>Meta Data for: '+id+'</b><span id=close_tip>X</span>';
 				html +=	   '<p>'+ responseText +'</p>';
-				html +=		'</div>';
+				html +=		'<a href=http://'+dns+'>Link to server</a></div>';
 				console.log(responseText);
 				$('#info').remove();
 				$('body').stop().append(html).children('#info').hide().fadeIn(400);
