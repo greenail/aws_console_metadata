@@ -35,11 +35,11 @@ setInterval(function(){
 function gmAjax(obj){
   ajaxQueue.push(obj);
 }
-
+var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
 
 (function() {
  	
- 	var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
+ 	
  	// insert css we will use for our tool tip stuff
 	var tipcss = "FAIL";
 	var dns = "FAIL";
@@ -106,6 +106,8 @@ function gmAjax(obj){
 				var html = '<div id="info">';
 				html +=    '<b>Meta Data for: '+id+'</b><span id=close_tip>X</span>';
 				html +=	   '<p>'+ responseText +'</p>';
+				var clippyObject = clippy(dns);
+				html += clippyObject;
 				html +=		'<a href=http://'+dns+'>Browse</a></div>';
 				console.log(responseText);
 				$('#info').remove();
@@ -134,3 +136,28 @@ function gmAjax(obj){
 	
 }());
 
+function clippy(url)
+	{
+	var clippy = ['<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000"',
+            'width="110"',
+           ' height="14"',
+            'id="clippy" >',
+    	'<param name="movie" value="'+server_url+'clippy.swf"/>',
+    	'<param name="allowScriptAccess" value="always" />',
+    	'<param name="quality" value="high" />',
+    	'<param name="scale" value="noscale" />',
+    	'<param NAME="FlashVars" value="text='+url+'">',
+    	'<embed src="'+server_url+'clippy.swf"',
+           'width="110"',
+           'height="14"',
+           'name="clippy"',
+           'quality="high"',
+           'allowScriptAccess="always"',
+           'type="application/x-shockwave-flash"',
+           'pluginspage="http://www.macromedia.com/go/getflashplayer"',
+           'FlashVars="text='+url+'"',
+    	'/>',
+	'</object>'].join('');
+	
+	return clippy;
+	}
