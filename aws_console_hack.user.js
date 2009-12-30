@@ -40,10 +40,23 @@ function gmAjax(obj){
  	
  	var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
  	// insert css we will use for our tool tip stuff
-	$('head').append('<style type="text/css">#info { background: #808080; width: 400px; padding-bottom: .5em; overflow: hidden; position: absolute; }</style>');
-	$('head').append('<style type="text/css">#info p {background: #D2691E;margin-left: 15px;margin-top: 0;padding: 0 .4em 0 .4em;}</style>');
-	$('head').append('<style type="text/css">span#info { white-space: pre;font-family: monospace; display: block; }</style>');
-	$('head').append('<style type="text/css">#close_tip	{	position: absolute;	width: 1em;	right: 5px;	top 5px;}</style>');
+	var tipcss = "FAIL";
+	var url = server_url;
+	url += "style.html";
+	console.log(url);
+	gmAjax({
+		url: url,
+		method: 'GET',
+		onload: function(response){
+			tipcss = response.responseText;
+			console.log(tipcss);
+			$('head').append(tipcss);
+			},
+		onerror: function(response){
+                        console.error('ERROR' + response.status );
+                    	}
+		});
+	
  	// insert element we can use to activate our jquery once the instance table loads
 	$('#top_nav').append("<span id=activate_aws_hack style='background-color: #FFFF00' > Click Me when Instance List loads to see Meta Data!!! </span> ")
 	// listen for hover 
