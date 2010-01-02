@@ -15,7 +15,8 @@
 // Good idea to do js popup instead of full window popup
 // Might be cool to setup mimetype for .rdp file and button to launch rdp connection
 // Don't add clippy object if there is not DNS
-//
+// control pannel items: cache timeout, username/pass
+// need to make some buttons
 
 var mhash = new Object();
 var timeout = 1000;
@@ -46,25 +47,8 @@ function gmAjax(obj)
   	ajaxQueue.push(obj);
 	}
 var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
-
-
-(function() {
- 	// Listener for instances table
-	var interval;
-	$originalContent = $('#instances_datatable_hook').text();
-	interval = setInterval(function()
-		{
-		console.log("testing");
-    		if($originalContent != $('#instances_datatable_hook').text()) 
-			{
-			console.log("Content Changed");
-               		$originalContent = $('#instances_datatable_hook').text();
-			clearInterval(interval);
-               		}
-       		},500);	
-	 
- 	
- 	// insert css we will use for our tool tip stuff
+function loadCSS()
+	{
 	var tipcss = "FAIL";
 	var dns = "FAIL";
 	var url = server_url;
@@ -82,13 +66,44 @@ var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
                         console.error('ERROR' + response.status );
                     	}
 		});
+	}
+
+// main jQuery funciton *** alias for document.ready
+(function() {
+ 	
+ 	// insert css we will use for our tool tip stuff
+	loadCSS();
 	
- 	// insert element we can use to activate our jquery once the instance table loads
-	$('#top_nav').append("<span id=activate_aws_hack style='background-color: #FFFF00' > Click Me when Instance List loads to see Meta Data!!! </span> ")
+	$('#top_nav').append("<span id=activate_aws_hack style='background-color: #FFFF00' > Waiting for Instance table to be loaded... </span> ")
+	// todo add loading image here
+
+ 	// Listener for instances table
+	var interval;
+	$originalContent = $('#instances_datatable_hook').text();
+	interval = setInterval(function()
+		{
+		console.log("testing");
+    		if($originalContent != $('#instances_datatable_hook').text()) 
+			{
+			console.log("Content Changed");
+               		$originalContent = $('#instances_datatable_hook').text();
+			getMeta();
+			clearInterval(interval);
+               		}
+       		},500);	
+	// setup for test page /jqtest/table.html
+	$('#test').click(function ()
+		{
+ 		$("th:first").text("INSTANCE ID");		    	
+    		});
+	}()); // end doc ready
+
+function getMeta ()
+	{
+	console.log("Setting up meta data:");
 	// listen for hover 
 	//$('#top_nav span#activate_aws_hack').click( function (c) {
-	$('#nav_link_19').click(function (c) {
-	   $('#top_nav span#activate_aws_hack').text("Meta Hack Activated"); 
+	$('#top_nav span#activate_aws_hack').text("Meta Hack Activated"); 
 		
 	    $("td.yui-dt8-col-instanceId div span").click(function (c) {
 		// Set listener for <ctrl> + click so we can edit our meta data
@@ -100,6 +115,9 @@ var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
 			url = server_url;
 			url += "dev/edit_dev?aws_id=" + id;
 			console.log("Total URL Requests: "+requests);
+			// invalidate cache since we are "editing"
+			cache_url = server_url + "?aws_id=" + id;
+			mhash[cache_url] = '';
 			window.open(url);
 			}
 		});
@@ -164,12 +182,9 @@ var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
 	    
 	    console.log("Listiner should be in place");
 	    
-	}); // end click
-    $('#test').click(function (){
- 	$("th:first").text("INSTANCE ID");		    	
-    	});
-	
-}()); // end doc ready
+
+    }	
+
 function makeTT(e,id,dns,responseText)
 	{
 	// construct tooltip
