@@ -42,13 +42,27 @@ setInterval(function(){
 
 function gmAjax(obj)
 	{
-	console.log("adding " + obj.url + " to queue");
+	console.log("AJAX: adding " + obj.url + " to queue");
   	ajaxQueue.push(obj);
 	}
 var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
 
+
 (function() {
- 	
+ 	// Listener for instances table
+	var interval;
+	$originalContent = $('#instances_datatable_hook').text();
+	interval = setInterval(function()
+		{
+		console.log("testing");
+    		if($originalContent != $('#instances_datatable_hook').text()) 
+			{
+			console.log("Content Changed");
+               		$originalContent = $('#instances_datatable_hook').text();
+			clearInterval(interval);
+               		}
+       		},500);	
+	 
  	
  	// insert css we will use for our tool tip stuff
 	var tipcss = "FAIL";
@@ -72,12 +86,10 @@ var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
  	// insert element we can use to activate our jquery once the instance table loads
 	$('#top_nav').append("<span id=activate_aws_hack style='background-color: #FFFF00' > Click Me when Instance List loads to see Meta Data!!! </span> ")
 	// listen for hover 
-	$('#top_nav span#activate_aws_hack').click( function (c) {
+	//$('#top_nav span#activate_aws_hack').click( function (c) {
+	$('#nav_link_19').click(function (c) {
 	   $('#top_nav span#activate_aws_hack').text("Meta Hack Activated"); 
-	    console.log("Hack Activated");
-
-	    // one liner test for firebug
-	    // $("td.yui-dt8-col-instanceId div span").hover(function () {var id = $(this).text();id = jQuery.trim(id);var log = "-- ";log += id;console.log(log);});
+		
 	    $("td.yui-dt8-col-instanceId div span").click(function (c) {
 		// Set listener for <ctrl> + click so we can edit our meta data
 		if (c.ctrlKey)
@@ -91,7 +103,9 @@ var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
 			window.open(url);
 			}
 		});
+
 	    $("td.yui-dt8-col-instanceId div span").hover(function (e) {
+		// look for hover over AWS_ID cell
 		var rowIndex = $(this).parent().parent().parent().prevAll().length;
 		console.log(rowIndex);
 		// find public dns
@@ -151,9 +165,11 @@ var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
 	    console.log("Listiner should be in place");
 	    
 	}); // end click
-
+    $('#test').click(function (){
+ 	$("th:first").text("INSTANCE ID");		    	
+    	});
 	
-}());
+}()); // end doc ready
 function makeTT(e,id,dns,responseText)
 	{
 	// construct tooltip
