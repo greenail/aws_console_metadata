@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name           aws_console_hack
+// @name           aws_console_metadata
 // @namespace      stink.net/aws
 // @description    a hack for meta info in console
 // @include        https://console.aws.amazon.com/*
@@ -14,15 +14,19 @@
 // Need to add volume data
 // Good idea to do js popup instead of full window popup
 // Might be cool to setup mimetype for .rdp file and button to launch rdp connection
+// Don't add clippy object if there is not DNS
 //
 
-
+var mhash = new Object();
+var timeout = 1000;
 var ajaxQueue = [];
+var requests = 0;
 var processAjaxQueue = function(){
   if (ajaxQueue.length > 0) {
     for (ajax in ajaxQueue) {
       var obj = ajaxQueue[ajax];
       // http://diveintogreasemonkey.org/api/gm_xmlhttprequest.html
+      requests++;
       GM_xmlhttpRequest(obj);
     }
     ajaxQueue = [];
@@ -32,9 +36,15 @@ setInterval(function(){
   processAjaxQueue();
 }, 100);
 
-function gmAjax(obj){
-  ajaxQueue.push(obj);
-}
+// found this gmAjax hack here:
+// http://74.125.113.132/search?q=cache:9erBqocLXRUJ:userscripts.org/scripts/review/64286+greasemonkey+jquery+gmAjax&cd=2&hl=en&ct=clnk&gl=us&client=firefox-a
+//
+
+function gmAjax(obj)
+	{
+	console.log("adding " + obj.url + " to queue");
+  	ajaxQueue.push(obj);
+	}
 var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
 
 (function() {
@@ -77,55 +87,61 @@ var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
 			id = jQuery.trim(id);
 			url = server_url;
 			url += "dev/edit_dev?aws_id=" + id;
+			console.log("Total URL Requests: "+requests);
 			window.open(url);
 			}
 		});
 	    $("td.yui-dt8-col-instanceId div span").hover(function (e) {
 		var rowIndex = $(this).parent().parent().parent().prevAll().length;
 		console.log(rowIndex);
+		// find public dns
 		var $trs = $(this).parent().parent().parent();
 		var dns = $trs.children('td.yui-dt8-col-dnsName').text();
+		// grab the AWS id in the current cell
 		var id = $(this).text();
 		id = jQuery.trim(id);
-		var log = "Hovering over Instance ID: ";
-		log += id;
-		console.log(log);
-		
-
-		// found this gmAjax hack here:
-		// http://74.125.113.132/search?q=cache:9erBqocLXRUJ:userscripts.org/scripts/review/64286+greasemonkey+jquery+gmAjax&cd=2&hl=en&ct=clnk&gl=us&client=firefox-a
+		// construct url for ajax	
 		var url = server_url;
 		url += '?aws_id='+id;
-		gmAjax({
-		
-			url: url,
-			method: 'GET',
-			onload: function(response){
-				var responseText = "FAIL";
-				responseText = response.responseText;
-				var html = '<div id="info">';
-				html +=    '<b>Meta Data for: '+id+'</b><span id=close_tip>X</span>';
-				html +=	   '<p>'+ responseText +'</p>';
-				var clippyObject = clippy(dns);
-				html += clippyObject;
-				if (dns != "")
-					{
-					html +=		'<a href=http://'+dns+'>Browse</a></div>';
-					}
-				console.log(responseText);
-				$('#info').remove();
-				$('body').stop().append(html).children('#info').hide().fadeIn(400);
-				$('#info').css('top', e.pageY + -20).css('left', e.pageX + 40);
-				// close tooltip
-				$('span#close_tip').click(function(){
-					console.log("close tip clicked");
-					$('#info').remove();
-					});
-				},
-			onerror: function(response){
-                        	console.error('ERROR' + response.status );
-                    		}
+		// check cache for result var timeout is caching time in milliseconds
+		var responseText = "FAIL";
+		if (mhash[url])
+			{
+  			var now =  new Date().getTime();
+			var ctime = mhash[url].time + timeout;
+			console.log("Now: "+ now + "Cache Time: "+ctime);
+			responseText = mhash[url].content;
+			if ( now > ctime )
+      				{
+				console.log("cache expired for:" +url);
+				mhash[url] = '';
+				// this is the old result, need to get a fresh one!
+				makeTT(e,id,dns,responseText);
+				}
+			else
+				{
+				responseText = mhash[url].content;
+				responseText += " C";
+				makeTT(e,id,dns,responseText);
+				}
+			}
+		else
+			{
+			gmAjax({
+				url: url,
+				method: 'GET',
+				onload: function(response){
+					responseText = response.responseText;
+					mhash[url] = new Object();
+					mhash[url].content = responseText;
+					mhash[url].time = new Date().getTime();
+					makeTT(e,id,dns,responseText);
+					},
+				onerror: function(response){
+                        		console.error('ERROR' + response.status );
+                    			}
 			});
+			}
 	    	}, function(){
 			//$('#info').remove();
 		}); // end hover
@@ -138,6 +154,29 @@ var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
 
 	
 }());
+function makeTT(e,id,dns,responseText)
+	{
+	// construct tooltip
+	var html = '<div id="info">';
+	html +=    '<b>Meta Data for: '+id+'</b><span id=close_tip>X</span>';
+	html +=	   '<p>'+ responseText +'</p>';
+	var clippyObject = clippy(dns);
+	html += clippyObject;
+	if (dns != "")
+		{
+		html +=		'<a href=http://'+dns+'>Browse</a></div>';
+		}
+	console.log(responseText);
+	// make sure we don't have another tooltip open
+	$('#info').remove();
+	$('body').stop().append(html).children('#info').hide().fadeIn(400);
+	$('#info').css('top', e.pageY + -20).css('left', e.pageX + 40);
+	// close tooltip
+	$('span#close_tip').click(function(){
+		console.log("close tip clicked");
+		$('#info').remove();
+		});
+	}
 
 function clippy(url)
 	{
@@ -164,3 +203,4 @@ function clippy(url)
 	
 	return clippy;
 	}
+
