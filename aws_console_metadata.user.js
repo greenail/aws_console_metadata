@@ -69,6 +69,37 @@ function loadCSS()
                     	}
 		});
 	}
+function loadOptions()
+	{
+	var html = "FAIL";
+	var dns = "FAIL";
+	var url = server_url;
+	url += "options.html";
+	console.log("Options: "+url);
+	gmAjax({
+		url: url,
+		method: 'GET',
+		onload: function(response){
+			html = response.responseText;
+			$('body').prepend(html);
+			$('#timeout').val(timeout);
+			$('#options').hide();
+			$('#closeOptions').click(function()
+				{
+				//l("close clicked!",1);
+				$('#options').hide();
+				});
+			$('#toggleOptions').click(function ()
+				{
+				//l("toggled!");
+				$('#options').toggle();
+				});
+			},
+		onerror: function(response){
+                        console.error('ERROR' + response.status );
+                    	}
+		});
+	}
 function change_id_to_name()
 	{
 	$("td.yui-dt8-col-instanceId div span").each(function()
@@ -207,7 +238,7 @@ function makeTT(e,id,dns,responseText)
 	{
 	// construct tooltip
 	var html = '<div id="info">';
-	html +=    '<b>Meta Data for: '+id+'</b><span id=close_tip>X</span>';
+	html +=    '<b>Meta Data for: '+id+'</b><span id=close_tip class=folink>X</span>';
 	html +=	   '<p>'+ responseText +'</p>';
 	// don't put clippy object or browse link if there is no DNS	
 	if (dns != "")
@@ -253,18 +284,41 @@ function clippy(url)
 	
 	return clippy;
 	}// end clippy
-
+function l (s,newline)
+	{
+	$('#logtext').append(s);
+	if (newline)
+		{
+		$('#logtext').append("<br/>")
+		}
+	return;
+	}
 
 // main jQuery funciton *** alias for document.ready
 var stopListen = false;
 var $originalContent;
+
+
 (function() {
 	// insert css we will use for our tool tip stuff
 	loadCSS();
+	// add navivation
+	$('#top_nav').append("<div id=mytop_nav><span id=activate_aws_hack > Waiting for Instance table to be loaded... </span> <span id=toggleOptions class=folink>Options</span><div>")
+	$('body').append('<div id=mylog>Log: <br/><a href="#" id=clearLog>Clear the Log</a><hr /><div id=logtext>');
+	// TODO: add loading image here
 	
-	$('#top_nav').append("<span id=activate_aws_hack style='background-color: #FFFF00' > Waiting for Instance table to be loaded... </span> ")
-	// todo add loading image here
-
+	// load our options html from the server
+	loadOptions();
+	
+	
+	
+	// This is for our log hack.	
+	
+	$('#clearLog').click(function()
+		{
+		$('#logtext').text(" ");
+		});
+	
  	// Listener for instance table changes
 	var interval;
 	$originalContent = $('#instances_datatable_hook').text();
