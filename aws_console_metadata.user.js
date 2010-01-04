@@ -303,7 +303,7 @@ var $originalContent;
 	// insert css we will use for our tool tip stuff
 	loadCSS();
 	// add navivation
-	$('#top_nav').append("<div id=mytop_nav><span id=activate_aws_hack > Waiting for Instance table to be loaded... </span> <span id=toggleOptions class=folink>Options</span><div>")
+	$('#top_nav').append("<div id=mytop_nav><span id=activate_aws_hack > Waiting for Instance load... </span> <span id=toggleOptions class=folink>Options</span><div>")
 	$('body').append('<div id=mylog>Log: <br/><a href="#" id=clearLog>Clear the Log</a><hr /><div id=logtext>');
 	// TODO: add loading image here
 	
