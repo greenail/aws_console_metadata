@@ -19,7 +19,13 @@
 // need to make some buttons
 
 var mhash = new Object();
-var timeout = 1000;
+
+// need a load defaults method
+var timeout = 2000;
+var table_load_timeout = 500;
+var changeNames = true;
+var debug = false;
+var showLog = false;
 var ajaxQueue = [];
 var requests = 0;
 
@@ -30,6 +36,7 @@ var processAjaxQueue = function(){
       var obj = ajaxQueue[ajax];
       // http://diveintogreasemonkey.org/api/gm_xmlhttprequest.html
       requests++;
+      $('#totalAjax').text(requests);
       GM_xmlhttpRequest(obj);
     }
     ajaxQueue = [];
@@ -37,7 +44,7 @@ var processAjaxQueue = function(){
 }
 setInterval(function(){
   processAjaxQueue();
-}, 100);
+}, 50);
 
 // found this gmAjax hack here:
 // http://74.125.113.132/search?q=cache:9erBqocLXRUJ:userscripts.org/scripts/review/64286+greasemonkey+jquery+gmAjax&cd=2&hl=en&ct=clnk&gl=us&client=firefox-a
@@ -45,23 +52,23 @@ setInterval(function(){
 
 function gmAjax(obj)
 	{
-	console.log("AJAX: adding " + obj.url + " to queue");
+	l("AJAX: adding " + obj.url + " to queue",1);
   	ajaxQueue.push(obj);
 	}
-var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
+//var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
+var server_url = "http://localhost/";
 function loadCSS()
 	{
 	var tipcss = "FAIL";
 	var dns = "FAIL";
 	var url = server_url;
 	url += "style.html";
-	console.log(url);
+	l(url,1);
 	gmAjax({
 		url: url,
 		method: 'GET',
 		onload: function(response){
 			tipcss = response.responseText;
-			//console.log(tipcss);
 			$('head').append(tipcss);
 			},
 		onerror: function(response){
@@ -75,7 +82,7 @@ function loadOptions()
 	var dns = "FAIL";
 	var url = server_url;
 	url += "options.html";
-	console.log("Options: "+url);
+	l("Options: "+url,1);
 	gmAjax({
 		url: url,
 		method: 'GET',
@@ -83,6 +90,7 @@ function loadOptions()
 			html = response.responseText;
 			$('body').prepend(html);
 			$('#timeout').val(timeout);
+			$('#table_load_timeout').val(table_load_timeout);
 			$('#options').hide();
 			$('#closeOptions').click(function()
 				{
@@ -94,20 +102,51 @@ function loadOptions()
 				//l("toggled!");
 				$('#options').toggle();
 				});
+			$('#logToggle').click(function()
+				{
+				$('#mylog').toggle();	
+				l("Log Toggled",1);
+				});
+			$('#nameToggle').click(function()
+				{
+				l("Name Toggled",1);
+				});
+			$('#debugToggle').click(function()
+				{
+				if (debug == false)
+					{
+					debug = true;
+					}
+				else { debug = false;}
+				l("Debug Toggled",1);
+				});
+			$('#optionSubmit').click(function()
+				{
+				l(" --Submit clicked-- ");
+				updateOptions();
+				});
 			},
 		onerror: function(response){
                         console.error('ERROR' + response.status );
                     	}
 		});
 	}
+function updateOptions()
+	{
+	timeout = $('#timeout').val();
+	l("timeout set to: "+timeout,1);
+
+	}
 function change_id_to_name()
+	{
+	if (changeNames)
 	{
 	$("td.yui-dt8-col-instanceId div span").each(function()
 		{
 		var $cell = $(this);
 		var id = $cell.text();
 		id = jQuery.trim(id);
-		console.log(id);
+		l(id);
 		var name = "fun";
 		url = server_url;
 		url += "dev/name?aws_id=" + id + "&getName=1";
@@ -120,12 +159,12 @@ function change_id_to_name()
 				if (name.search('error') == -1)
 					{
 					stopListen = true;
-					console.log("NAME: "+name);
+					l("NAME: "+name,1);
 					// add name to table
 					//$cell.parent().parent().parent().append("<td class='yui-dt8-col-funName yui-dt-col-funName yui-dt-sortable yui-dt-resizeable' headers='yui-dt8-th-funname'><div class=yui-dt-liner>"+name+"</div></td>");
 					$cell.text(name);
 					$cell.attr("id",id);
-					console.log($cell.text());
+					l($cell.text(),1);
 					$originalContent = $('#instances_datatable_hook').text();
 					stopListen = false;
 					}
@@ -135,6 +174,7 @@ function change_id_to_name()
                    		}
 			});
 		});
+	}
 	}
 function getAWS_ID(obj)
 	{
@@ -152,7 +192,7 @@ function getAWS_ID(obj)
 	}
 function getMeta ()
 	{
-	console.log("Setting up meta data:");
+	l("Setting up meta data:",1);
 	change_id_to_name();
 	$('#top_nav span#activate_aws_hack').text("Meta Hack Activated"); 
 
@@ -164,7 +204,7 @@ function getMeta ()
 			var id = getAWS_ID($(this));
 			url = server_url;
 			url += "dev/edit_dev?aws_id=" + id;
-			console.log("Total URL Requests: "+requests);
+			l("Total URL Requests: "+requests,1);
 			// invalidate cache since we are "editing"
 			cache_url = server_url + "?aws_id=" + id;
 			mhash[cache_url] = '';
@@ -175,7 +215,7 @@ function getMeta ()
 	    $("td.yui-dt8-col-instanceId div span").hover(function (e) {
 		// look for hover over AWS_ID cell
 		var rowIndex = $(this).parent().parent().parent().prevAll().length;
-		console.log(rowIndex);
+		l(rowIndex);
 		// find public dns
 		var $trs = $(this).parent().parent().parent();
 		var dns = $trs.children('td.yui-dt8-col-dnsName').text();
@@ -190,11 +230,11 @@ function getMeta ()
 			{
   			var now =  new Date().getTime();
 			var ctime = mhash[url].time + timeout;
-			console.log("Now: "+ now + "Cache Time: "+ctime);
+			l("Now: "+ now + "Cache Time: "+ctime,l);
 			responseText = mhash[url].content;
 			if ( now > ctime )
       				{
-				console.log("cache expired for:" +url);
+				l("cache expired for:" +url,1);
 				mhash[url] = '';
 				// this is the old result, need to get a fresh one!
 				makeTT(e,id,dns,responseText);
@@ -229,7 +269,7 @@ function getMeta ()
 
 	    		
 	    
-	    console.log("Listiner should be in place");
+	    l("Listiner should be in place",1);
 	    
 
     } // end getMeta
@@ -247,14 +287,14 @@ function makeTT(e,id,dns,responseText)
 		html += clippyObject;
 		html +=		'<a href=http://'+dns+'>Browse</a></div>';
 		}
-	console.log(responseText);
+	//console.log(responseText);
 	// make sure we don't have another tooltip open
 	$('#info').remove();
 	$('body').stop().append(html).children('#info').hide().fadeIn(400);
 	$('#info').css('top', e.pageY + -20).css('left', e.pageX + 40);
 	// close tooltip
 	$('span#close_tip').click(function(){
-		console.log("close tip clicked");
+		l(" --close tip clicked-- ");
 		$('#info').remove();
 		});
 	} // end makeTT (make tooltip)
@@ -286,12 +326,16 @@ function clippy(url)
 	}// end clippy
 function l (s,newline)
 	{
-	$('#logtext').append(s);
-	if (newline)
-		{
-		$('#logtext').append("<br/>")
+	if (debug)
+		{	
+		console.log(s);
+		$('#logtext').append(s);
+		if (newline)
+			{
+			$('#logtext').append("<br/>")
+			}
+		return;
 		}
-	return;
 	}
 
 // main jQuery funciton *** alias for document.ready
@@ -305,6 +349,7 @@ var $originalContent;
 	// add navivation
 	$('#top_nav').append("<div id=mytop_nav><span id=activate_aws_hack > Waiting for Instance load... </span> <span id=toggleOptions class=folink>Options</span><div>")
 	$('body').append('<div id=mylog>Log: <br/><a href="#" id=clearLog>Clear the Log</a><hr /><div id=logtext>');
+	$('#mylog').hide();
 	// TODO: add loading image here
 	
 	// load our options html from the server
@@ -333,11 +378,11 @@ var $originalContent;
 			{
     			if($originalContent != $('#instances_datatable_hook').text()) 
 				{
-				console.log("Content Changed");
+				l(" --Content Changed-- ");
                			$originalContent = $('#instances_datatable_hook').text();
 				// set timeout so table can load, 
 				// TODO: may want to make this user settable
-				setTimeout(getMeta,500);
+				setTimeout(getMeta,table_load_timeout);
 				//clearInterval(interval);
                			}
 			}
@@ -346,6 +391,7 @@ var $originalContent;
 	$('#test').click(function ()
 		{
  		$("th:first").text("INSTANCE ID");		    	
+		//setTimeout('th.toggle()',200);
     		});
 	}()); // end doc ready
 

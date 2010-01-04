@@ -28,7 +28,7 @@
 	margin-left: 15px;
 	margin-right 15px;
 	margin-top: 0;
-	padding: 0 .4em 0 .4em;
+	padding: .4em .4em;
 	}
 #close_tip
 	{
@@ -49,6 +49,7 @@
         }
 #options 
 	{
+		display: none;
 		position: fixed;
 		z-index: 9999;
 		vertical-align:top;
@@ -58,14 +59,18 @@
 		background: white;
 		border: .1em solid black;
 	}
+#inbox
+	{
+	padding: 1em 1em 1em 1em;
+	}
 span.folink
 	{
 		position: relative;
 		float: right;
+		padding: .4em .4em .4em .4em;
+		margin-right: 1em;
 		border: .1em solid black;
 		width: 4em;
-	
-		
 	}
 span.folink:hover
 	{
@@ -76,7 +81,25 @@ span.folink:hover
 		color: red;
 		text-decoration: 
 		width: 4em;
-		
+	}
+span.r-folink
+	{
+		position: relative;
+		float: left;
+		padding: .4em .4em .4em .4em;
+		margin-right: 1em;
+		border: .1em solid black;
+		width: 4em;
+	}
+span.r-folink:hover
+	{
+		position: relative;
+		float: left;
+		border: .2em solid red;
+		font-weight: bold;
+		color: red;
+		text-decoration: 
+		width: 4em;
 	}
 #mytop_nav
 	{

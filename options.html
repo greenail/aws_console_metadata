@@ -1,10 +1,18 @@
 			<div id=options>
+				<div id=inbox>
 				<span id=closeOptions class=folink>close X</span>
-				<h1>AWS Console Custom Meta Data Options</h1>
-				<form method=post action=>
-					<label> Server Cache Time out: </label><input type=text name=timeout id=timeout><br/>
-					<label> Change AWS instance IDs to names</label><input type=checkbox name=changenames id=changenames>
+				<h2>AWS Console Custom Meta Data Options</h2>
+					<label> Server Cache Time out: (ms)</label><input type=text name=timeout id=timeout><br/>
+					<label> Time to wait for tables to load: (ms) </label><input type=text name=table_load_timeout id=table_load_timeout><br/>
+					<label> Change AWS instance IDs to names</label><input type=checkbox name=toggleNames id=toggleNames><br/>
+					<label> Display Log (firebug works better)</label><input type=checkbox name=logToggle id=logToggle><br/>
+					<label> Turn on Debugging </label><input type=checkbox name=debugToggle id=debugToggle><br/>
 
-				</form>
+
+					<span name=optionSubmit id=optionSubmit class=folink>Save</span>	<br/><br/>
+						<span id=optionLoadDefaults class=folink>Load Defaults</span>	<br/>
+					Total AJAX Requests: <label id=totalAjax>0</label>
+				</div>
+
 			</div>
 
