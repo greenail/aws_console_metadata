@@ -17,6 +17,7 @@
 // Don't add clippy object if there is not DNS
 // control pannel items: cache timeout, username/pass
 // need to make some buttons
+// Need to add server DNS to options.
 
 var mhash = new Object();
 
@@ -55,8 +56,8 @@ function gmAjax(obj)
 	l("AJAX: adding " + obj.url + " to queue",1);
   	ajaxQueue.push(obj);
 	}
-//var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
-var server_url = "http://localhost/";
+var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
+//var server_url = "http://localhost/";
 function loadCSS()
 	{
 	var tipcss = "FAIL";
