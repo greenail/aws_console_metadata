@@ -93,6 +93,14 @@ function loadOptions()
 			$('#timeout').val(timeout);
 			$('#table_load_timeout').val(table_load_timeout);
 			$('#options').hide();
+			if (GM_getValue("username"))
+				{
+				$('#username').val(GM_getValue("username"));	
+				}
+			if (GM_getValue("password"))
+				{
+				$('#password').val(GM_getValue("password"));	
+				}
 			$('#closeOptions').click(function()
 				{
 				//l("close clicked!",1);
@@ -129,6 +137,8 @@ function loadOptions()
 			$('#login').click(function (){
 				username = $('#username').val();
 				password = $('#password').val();
+				GM_setValue("username",username);
+				GM_setValue("password",password);
 				url = server_url;
 				url += "login";
 				l("u&p" + username + " : " + password)
@@ -190,9 +200,10 @@ function change_id_to_name()
 					}
 				catch(e)
 					{
-					if (response.responseText.search('login'))
+					if (response.responseText.search('please login'))
 						{
-						alert("Not Logged in");
+						alert("Please enter your username and password!");
+						$('#options').show();
 						}
 					else
 						{
