@@ -56,9 +56,9 @@ var ajaxQueue = [];
 var requests = 0;
 var username;
 var password;
-var json = new Object();
-json.name;
-json.description = "<span class=rl-folink id=edit>Click here to Enter Meta Information</span>";
+var d_json = new Object();
+d_json.name;
+d_json.description = "<span class=rl-folink id=edit>Click here to Enter Meta Information</span>";
 var edit_form = "Server Error";
 // this gets us our XSS
 var processAjaxQueue = function(){
@@ -196,8 +196,9 @@ function loadOptions()
 		});
 	}
 function do_login(){
-	if (username != $('#username').val() && password != $('#password').val())
+	if ((username != $('#username').val()) || (password != $('#password').val()))
 		{
+		l("updating username and password",1)
 		username = $('#username').val();
 		password = $('#password').val();
 		GM_setValue("username", username);
@@ -216,7 +217,7 @@ function do_login(){
 	
 	url = server_url;
 	url += "login";
-	l("u&p" + username + " : " + password)
+	l("u&p " + username + " : " + password)
 	gmAjax({
 		url: url,
 		method: 'POST',
@@ -256,13 +257,13 @@ function change_id_to_name()
 	$("td.yui-dt8-col-instanceId div span").each(function()
 		{
 		var $cell = $(this);
-		var id = $cell.text();
-		id = jQuery.trim(id);
-		l(id);
+		var aws_id = $cell.text();
+		aws_id = jQuery.trim(aws_id);
+		l(aws_id);
 		var name = "error";
 		
 		url = server_url;
-		url += "t_ms/?aws_id=" + id + "&getName=1";
+		url += "t_ms/?aws_id=" + aws_id + "&getName=1";
 		gmAjax({
 			url: url,
 			method: 'GET',
@@ -277,8 +278,9 @@ function change_id_to_name()
 						if (t_json != null)
 							{
 							json = t_json;
+							name = json.name;
 							}
-						name = json.name;
+						
 						} 
 					catch (e) {
 						if (response.responseText.search('please login') != -1) {
@@ -299,7 +301,7 @@ function change_id_to_name()
 					l("NAME: "+name,1);
 					$cell.text(name);
 					
-					$cell.attr("id",id);
+					$cell.attr("aws_id",aws_id);
 					l($cell.text(),1);
 					$originalContent = $('#instances_datatable_hook').text();
 					stopListen = false;
@@ -315,7 +317,7 @@ function change_id_to_name()
 	}
 function getAWS_ID(obj)
 	{
-	var idattr = obj.attr("id");
+	var idattr = obj.attr("aws_id");
 	if(idattr)
 		{
 		return idattr;	
@@ -358,14 +360,16 @@ function getMeta ()
 		// look for hover over AWS_ID cell
 		var rowIndex = $(this).parent().parent().parent().prevAll().length;
 		l(rowIndex);
+		json = d_json;
 		// find public dns
 		var $trs = $(this).parent().parent().parent();
 		var dns = $trs.children('td.yui-dt8-col-dnsName').text();
 		// grab the AWS id in the current cell
 		var aws_id = getAWS_ID($(this));
+		//json.aws_id = aws_id;
 		// construct url for ajax	
 		var url = server_url;
-		url += 't_ms/?aws_id='+aws_id;
+		url += 't_ms?aws_id='+aws_id;
 		// check cache for result var timeout is caching time in milliseconds
 		var responseText = "FAIL";
 		if (mhash[url])
@@ -384,7 +388,7 @@ function getMeta ()
 			else
 				{
 				json = mhash[url].content;
-				//responseText += " C";
+				json.description += " C";
 				makeTT(e,dns,json);
 				}
 			}
@@ -400,8 +404,6 @@ function getMeta ()
 					if (t_json != null)
 						{
 						json = t_json;
-						}
-					if (json.name) {
 						mhash[url] = new Object();
 						mhash[url].content = json;
 						mhash[url].time = new Date().getTime();
@@ -410,7 +412,7 @@ function getMeta ()
 					else
 						{
 						json.aws_id = aws_id;
-						//json.description = "Server may be down, or your username/password may be wrong";
+						l("JSON was not valid, using defaults",1)
 						makeTT(e, dns, json);	
 						}
 					},
@@ -482,6 +484,7 @@ function updateMeta(json)
 		
 		onload: function(response){
 			l(response.responseText);
+			$('#meta-info').remove();
 			
 		},
 		onerror: function(response){
