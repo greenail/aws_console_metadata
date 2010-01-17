@@ -29,6 +29,8 @@ var debug = false;
 var showLog = false;
 var ajaxQueue = [];
 var requests = 0;
+var username;
+var password;
 
 // this gets us our XSS
 var processAjaxQueue = function(){
@@ -95,11 +97,17 @@ function loadOptions()
 			$('#options').hide();
 			if (GM_getValue("username"))
 				{
-				$('#username').val(GM_getValue("username"));	
+				username = 	GM_getValue("username");
+				$('#username').val(username);
 				}
 			if (GM_getValue("password"))
 				{
-				$('#password').val(GM_getValue("password"));	
+				password = GM_getValue("password");
+				$('#password').val(password);	
+				}
+			if (username != null && password != null)
+				{
+				do_login();
 				}
 			$('#closeOptions').click(function()
 				{
@@ -134,37 +142,39 @@ function loadOptions()
 				l(" --Submit clicked-- ");
 				updateOptions();
 				});
-			$('#login').click(function (){
-				username = $('#username').val();
-				password = $('#password').val();
-				GM_setValue("username",username);
-				GM_setValue("password",password);
-				url = server_url;
-				url += "login";
-				l("u&p" + username + " : " + password)
-				gmAjax({
-					url: url,
-					method: 'POST',
-					data: "_method=PUT&login="+username+"&password="+password ,
-					headers: 
-						{
-    					"Content-Type": "application/x-www-form-urlencoded"
-  						},
-					onload: function(response)
-						{
-						l("login did not throw error");
-						},
-					onerror: function(response)
-						{
-		                console.error('ERROR' + response.status );
-		                }
-					});
-				});
+			$('#login').click(do_login());
 			
 			},
 		onerror: function(response){
                         console.error('ERROR' + response.status );
                     	}
+		});
+	}
+function do_login(){
+	if (username == null && password == null)
+		{
+		username = $('#username').val();
+		password = $('#password').val();
+		GM_setValue("username", username);
+		GM_setValue("password", password);	
+		}
+	
+	url = server_url;
+	url += "login";
+	l("u&p" + username + " : " + password)
+	gmAjax({
+		url: url,
+		method: 'POST',
+		data: "_method=PUT&login=" + username + "&password=" + password,
+		headers: {
+			"Content-Type": "application/x-www-form-urlencoded"
+		},
+		onload: function(response){
+			l("login did not throw error");
+		},
+		onerror: function(response){
+			console.error('ERROR' + response.status);
+			}
 		});
 	}
 function updateOptions()
