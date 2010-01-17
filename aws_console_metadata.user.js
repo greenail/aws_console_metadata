@@ -56,7 +56,10 @@ var ajaxQueue = [];
 var requests = 0;
 var username;
 var password;
-
+var json = new Object();
+json.name;
+json.description = "<span class=rl-folink id=edit>Click here to Enter Meta Information</span>";
+var edit_form = "Server Error";
 // this gets us our XSS
 var processAjaxQueue = function(){
   if (ajaxQueue.length > 0) {
@@ -83,7 +86,7 @@ function gmAjax(obj)
 	l("AJAX: adding " + obj.url + " to queue",1);
   	ajaxQueue.push(obj);
 	}
-var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com/";
+var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com:8080/";
 //var server_url = "http://localhost/";
 function loadCSS()
 	{
@@ -98,6 +101,26 @@ function loadCSS()
 		onload: function(response){
 			tipcss = response.responseText;
 			$('head').append(tipcss);
+			},
+		onerror: function(response){
+                        console.error('ERROR' + response.status );
+                    	}
+		});
+	}
+function loadEditForm()
+	{
+	edit_form = "FAIL";
+	var url = server_url;
+	url += "edit.html";
+	l(url,1);
+	gmAjax({
+		url: url,
+		method: 'GET',
+		onload: function(response){
+			edit_form = response.responseText;
+			l(edit_form);
+			//$('body').append(edit_form);
+			//$('#edit_form').hide();
 			},
 		onerror: function(response){
                         console.error('ERROR' + response.status );
@@ -237,6 +260,7 @@ function change_id_to_name()
 		id = jQuery.trim(id);
 		l(id);
 		var name = "error";
+		
 		url = server_url;
 		url += "t_ms/?aws_id=" + id + "&getName=1";
 		gmAjax({
@@ -246,23 +270,27 @@ function change_id_to_name()
 				{
 				//name = response.responseText;
 				data = response.responseText;
-				try 
+				if (data != null) 
 					{
-					json = JSON.parse(data);
-					name = json.name;	
-					}
-				catch(e)
-					{
-					if (response.responseText.search('please login'))
-						{
-						alert("Please enter your username and password!");
-						$('#options').show();
+					try {
+						t_json = JSON.parse(data);
+						if (t_json != null)
+							{
+							json = t_json;
+							}
+						name = json.name;
+						} 
+					catch (e) {
+						if (response.responseText.search('please login') != -1) {
+							alert("Please enter your username and password! " + e.description);
+							l(response.responseText);
+							$('#options').show();
 						}
-					else
-						{
-						alert("server may be down: "+e.description);
-						
-						}	
+						else {
+							//alert("server may be down: " + e.description);
+							l("Server ERROR requesting meta info for aws_id: "+id)
+							}
+						}
 					}
 				//description = json.description;
 				if (name.search('error') == -1)
@@ -334,10 +362,10 @@ function getMeta ()
 		var $trs = $(this).parent().parent().parent();
 		var dns = $trs.children('td.yui-dt8-col-dnsName').text();
 		// grab the AWS id in the current cell
-		var id = getAWS_ID($(this));
+		var aws_id = getAWS_ID($(this));
 		// construct url for ajax	
 		var url = server_url;
-		url += 't_ms/?aws_id='+id;
+		url += 't_ms/?aws_id='+aws_id;
 		// check cache for result var timeout is caching time in milliseconds
 		var responseText = "FAIL";
 		if (mhash[url])
@@ -351,13 +379,13 @@ function getMeta ()
 				l("cache expired for:" +url,1);
 				mhash[url] = '';
 				// this is the old result, need to get a fresh one!
-				makeTT(e,id,dns,json);
+				makeTT(e,dns,json);
 				}
 			else
 				{
 				json = mhash[url].content;
 				//responseText += " C";
-				makeTT(e,id,dns,json);
+				makeTT(e,dns,json);
 				}
 			}
 		else
@@ -368,18 +396,22 @@ function getMeta ()
 				onload: function(response){
 					responseText = response.responseText;
 					data = response.responseText;
-					json = JSON.parse(data);
+					t_json = JSON.parse(data);
+					if (t_json != null)
+						{
+						json = t_json;
+						}
 					if (json.name) {
 						mhash[url] = new Object();
 						mhash[url].content = json;
 						mhash[url].time = new Date().getTime();
-						makeTT(e, id, dns, json);
+						makeTT(e, dns, json);
 						}
 					else
 						{
-						json.name = 'ERROR';
-						json.description = "Server may be down, or your username/password may be wrong";
-						makeTT(e, id, dns, json);	
+						json.aws_id = aws_id;
+						//json.description = "Server may be down, or your username/password may be wrong";
+						makeTT(e, dns, json);	
 						}
 					},
 				onerror: function(response){
@@ -399,14 +431,18 @@ function getMeta ()
     } // end getMeta
 
 // make tool tip
-function makeTT(e,id,dns,json)
+function makeTT(e,dns,json)
 	{
 	// construct tooltip
 	l("in makeTT ");
-	var html = '<div id="info">';
-	html +=    '<b>Meta Data for: '+id+'</b><span id=close_tip class=folink>X</span>';
+	id = json.id;
+	aws_id = json.aws_id;
+	
+	var html = '<div id="meta-info">';
+	html +=    '<b>Meta Data for: '+aws_id+'</b><span id=close_tip class=folink>X</span>';
 	html +=	   '<p>'+ json.name +'</p>';
 	html +=	   '<p>'+ json.description +'</p>';
+	html +=	   '<p>'+ json.id +'</p>';
 	// don't put clippy object or browse link if there is no DNS	
 	if (dns != "")
 		{
@@ -416,16 +452,43 @@ function makeTT(e,id,dns,json)
 		}
 	html += '</div>'
 	// make sure we don't have another tooltip open
-	$('#info').remove();
-	$('body').stop().append(html).children('#info').hide().fadeIn(400);
-	$('#info').css('top', e.pageY + -20).css('left', e.pageX + 40);
+	$('#meta-info').remove();
+	$('body').stop().append(html).children('#meta-info').hide().fadeIn(400);
+	$('#meta-info').css('top', e.pageY + -20).css('left', e.pageX + 40);
 	// close tooltip
 	$('span#close_tip').click(function(){
 		l(" --close tip clicked-- ");
-		$('#info').remove();
+		$('#meta-info').remove();
+		});
+	
+	// setup editing
+	$('#edit').click(function(){
+		$('#meta-info').html(edit_form);
+		$('#edit_form_submit').click(function(){
+			json.name = $('#edit_form_name').val();
+			json.description = $('#edit_form_description').val();
+			updateMeta(json);
+			});
 		});
 	} // end makeTT (make tooltip)
-
+function updateMeta(json)
+	{
+	url = server_url;
+	url += "t_ms?edit=1&name=" + json.name + "&description=" + json.description + "&fuckyou="+json.id+"&aws_id="+json.aws_id;
+	gmAjax({
+		url: url,
+		method: 'GET',
+		//data: "edit=1&name=" + json.name + "&description=" + json.description + "&fuckyou="+json.id+"&aws_id="+json.aws_id,
+		
+		onload: function(response){
+			l(response.responseText);
+			
+		},
+		onerror: function(response){
+			console.error('ERROR' + response.status);
+			}
+		});
+	}
 function clippy(url)
 	{
 	var clippy = ['<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000"',
@@ -472,6 +535,8 @@ var $originalContent;
 (function() {
 	// insert css we will use for our tool tip stuff
 	loadCSS();
+	// grab edit meta form
+	loadEditForm();
 	// add navivation
 	$('#top_nav').append('<div id=mytop_nav><span id=activate_aws_hack > <img src='+server_url+'waiting.gif> <span id=toggleOptions class=r-folink>Options</span></span><div>')
 	$('body').append('<div id=mylog>Log: <br/><a href="#" id=clearLog>Clear the Log</a><hr /><div id=logtext>');
