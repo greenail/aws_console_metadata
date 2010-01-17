@@ -258,7 +258,8 @@ function getMeta ()
 	{
 	l("Setting up meta data:",1);
 	change_id_to_name();
-	$('#top_nav span#activate_aws_hack').text("Meta Hack Activated"); 
+	ready_btn = "<img src='cooltext446144499.png' onmouseover=\"this.src='cooltext446144499MouseOver.png';\" onmouseout=\"this.src='cooltext446144499.png';\" />"
+	$('#top_nav span#activate_aws_hack').html(ready_btn+'<span id=toggleOptions class=r-folink>Options</span></span>'); 
 
 	// Set listener for <ctrl> + click so we can edit our meta data
 	$("td.yui-dt8-col-instanceId div span").click(function (c) {
@@ -423,7 +424,7 @@ var $originalContent;
 	// insert css we will use for our tool tip stuff
 	loadCSS();
 	// add navivation
-	$('#top_nav').append("<div id=mytop_nav><span id=activate_aws_hack > Waiting for Instance load... </span> <span id=toggleOptions class=folink>Options</span><div>")
+	$('#top_nav').append('<div id=mytop_nav><span id=activate_aws_hack > <img src='+server_url+'waiting.gif> <span id=toggleOptions class=r-folink>Options</span></span><div>')
 	$('body').append('<div id=mylog>Log: <br/><a href="#" id=clearLog>Clear the Log</a><hr /><div id=logtext>');
 	$('#mylog').hide();
 	// TODO: add loading image here
