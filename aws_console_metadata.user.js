@@ -126,6 +126,31 @@ function loadOptions()
 				l(" --Submit clicked-- ");
 				updateOptions();
 				});
+			$('#login').click(function (){
+				username = $('#username').val();
+				password = $('#password').val();
+				url = server_url;
+				url += "login";
+				l("u&p" + username + " : " + password)
+				gmAjax({
+					url: url,
+					method: 'POST',
+					data: "_method=PUT&login="+username+"&password="+password ,
+					headers: 
+						{
+    					"Content-Type": "application/x-www-form-urlencoded"
+  						},
+					onload: function(response)
+						{
+						l("login did not throw error");
+						},
+					onerror: function(response)
+						{
+		                console.error('ERROR' + response.status );
+		                }
+					});
+				});
+			
 			},
 		onerror: function(response){
                         console.error('ERROR' + response.status );
@@ -148,22 +173,39 @@ function change_id_to_name()
 		var id = $cell.text();
 		id = jQuery.trim(id);
 		l(id);
-		var name = "fun";
+		var name = "error";
 		url = server_url;
-		url += "dev/name?aws_id=" + id + "&getName=1";
+		url += "t_ms/?aws_id=" + id + "&getName=1";
 		gmAjax({
 			url: url,
 			method: 'GET',
 			onload: function(response)
 				{
-				name = response.responseText;
+				//name = response.responseText;
+				data = response.responseText;
+				try 
+					{
+					json = JSON.parse(data);
+					name = json.name;	
+					}
+				catch(e)
+					{
+					if (response.responseText.search('login'))
+						{
+						alert("Not Logged in");
+						}
+					else
+						{
+						alert("server may be down: "+e.description);
+						}	
+					}
+				//description = json.description;
 				if (name.search('error') == -1)
 					{
 					stopListen = true;
 					l("NAME: "+name,1);
-					// add name to table
-					//$cell.parent().parent().parent().append("<td class='yui-dt8-col-funName yui-dt-col-funName yui-dt-sortable yui-dt-resizeable' headers='yui-dt8-th-funname'><div class=yui-dt-liner>"+name+"</div></td>");
 					$cell.text(name);
+					
 					$cell.attr("id",id);
 					l($cell.text(),1);
 					$originalContent = $('#instances_datatable_hook').text();
@@ -204,10 +246,10 @@ function getMeta ()
 			//window.open(href, windowName, useParams);	
 			var id = getAWS_ID($(this));
 			url = server_url;
-			url += "dev/edit_dev?aws_id=" + id;
+			url += "t_ms/?aws_id=" + id;
 			l("Total URL Requests: "+requests,1);
 			// invalidate cache since we are "editing"
-			cache_url = server_url + "?aws_id=" + id;
+			cache_url = server_url + "t_ms/?aws_id=" + id;
 			mhash[cache_url] = '';
 			window.open(url);
 			}
@@ -224,7 +266,7 @@ function getMeta ()
 		var id = getAWS_ID($(this));
 		// construct url for ajax	
 		var url = server_url;
-		url += '?aws_id='+id;
+		url += 't_ms/?aws_id='+id;
 		// check cache for result var timeout is caching time in milliseconds
 		var responseText = "FAIL";
 		if (mhash[url])
@@ -232,19 +274,19 @@ function getMeta ()
   			var now =  new Date().getTime();
 			var ctime = mhash[url].time + timeout;
 			l("Now: "+ now + "Cache Time: "+ctime,l);
-			responseText = mhash[url].content;
+			json = mhash[url].content;
 			if ( now > ctime )
       				{
 				l("cache expired for:" +url,1);
 				mhash[url] = '';
 				// this is the old result, need to get a fresh one!
-				makeTT(e,id,dns,responseText);
+				makeTT(e,id,dns,json);
 				}
 			else
 				{
-				responseText = mhash[url].content;
-				responseText += " C";
-				makeTT(e,id,dns,responseText);
+				json = mhash[url].content;
+				//responseText += " C";
+				makeTT(e,id,dns,json);
 				}
 			}
 		else
@@ -254,10 +296,20 @@ function getMeta ()
 				method: 'GET',
 				onload: function(response){
 					responseText = response.responseText;
-					mhash[url] = new Object();
-					mhash[url].content = responseText;
-					mhash[url].time = new Date().getTime();
-					makeTT(e,id,dns,responseText);
+					data = response.responseText;
+					json = JSON.parse(data);
+					if (json.name) {
+						mhash[url] = new Object();
+						mhash[url].content = json;
+						mhash[url].time = new Date().getTime();
+						makeTT(e, id, dns, json);
+						}
+					else
+						{
+						json.name = 'ERROR';
+						json.description = "Server may be down, or your username/password may be wrong";
+						makeTT(e, id, dns, json);	
+						}
 					},
 				onerror: function(response){
                         		console.error('ERROR' + response.status );
@@ -275,20 +327,23 @@ function getMeta ()
 
     } // end getMeta
 
-function makeTT(e,id,dns,responseText)
+// make tool tip
+function makeTT(e,id,dns,json)
 	{
 	// construct tooltip
+	l("in makeTT ");
 	var html = '<div id="info">';
 	html +=    '<b>Meta Data for: '+id+'</b><span id=close_tip class=folink>X</span>';
-	html +=	   '<p>'+ responseText +'</p>';
+	html +=	   '<p>'+ json.name +'</p>';
+	html +=	   '<p>'+ json.description +'</p>';
 	// don't put clippy object or browse link if there is no DNS	
 	if (dns != "")
 		{
 		var clippyObject = clippy(dns);
 		html += clippyObject;
-		html +=		'<a href=http://'+dns+'>Browse</a></div>';
+		html +=		'<a href=http://'+dns+'>Browse</a>';
 		}
-	//console.log(responseText);
+	html += '</div>'
 	// make sure we don't have another tooltip open
 	$('#info').remove();
 	$('body').stop().append(html).children('#info').hide().fadeIn(400);
@@ -343,7 +398,6 @@ function l (s,newline)
 var stopListen = false;
 var $originalContent;
 
-
 (function() {
 	// insert css we will use for our tool tip stuff
 	loadCSS();
@@ -360,40 +414,34 @@ var $originalContent;
 	
 	// This is for our log hack.	
 	
-	$('#clearLog').click(function()
-		{
+	$('#clearLog').click(function(){
 		$('#logtext').text(" ");
-		});
+	});
 	
- 	// Listener for instance table changes
+	// Listener for instance table changes
 	var interval;
 	$originalContent = $('#instances_datatable_hook').text();
-	interval = setInterval(function()
-		{
+	interval = setInterval(function(){
 		// if we are changing content ignore the changes
-		if (stopListen)
-			{
+		if (stopListen) {
 			//$originalContent = $('#instances_datatable_hook').text();
-			}
-		else
-			{
-    			if($originalContent != $('#instances_datatable_hook').text()) 
-				{
+		}
+		else {
+			if ($originalContent != $('#instances_datatable_hook').text()) {
 				l(" --Content Changed-- ");
-               			$originalContent = $('#instances_datatable_hook').text();
+				$originalContent = $('#instances_datatable_hook').text();
 				// set timeout so table can load, 
 				// TODO: may want to make this user settable
-				setTimeout(getMeta,table_load_timeout);
+				setTimeout(getMeta, table_load_timeout);
 				//clearInterval(interval);
-               			}
 			}
-       		},500);	
+		}
+	}, 500);
 	// setup for test page /jqtest/table.html
-	$('#test').click(function ()
-		{
- 		$("th:first").text("INSTANCE ID");		    	
+	$('#test').click(function(){
+		$("th:first").text("INSTANCE ID");
 		//setTimeout('th.toggle()',200);
-    		});
+	});
 	}()); // end doc ready
 
 	
