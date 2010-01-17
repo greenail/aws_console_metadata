@@ -122,18 +122,15 @@ function loadOptions()
 			$('#options').hide();
 			if (GM_getValue("username"))
 				{
-				username = 	GM_getValue("username");
+				//username = 	GM_getValue("username");
 				$('#username').val(username);
 				}
 			if (GM_getValue("password"))
 				{
-				password = GM_getValue("password");
+				//password = GM_getValue("password");
 				$('#password').val(password);	
 				}
-			if (username != null && password != null)
-				{
-				do_login();
-				}
+			
 			$('#closeOptions').click(function()
 				{
 				//l("close clicked!",1);
@@ -167,7 +164,7 @@ function loadOptions()
 				l(" --Submit clicked-- ");
 				updateOptions();
 				});
-			$('#login').click(do_login());
+			$('#login').click(do_login);
 			
 			},
 		onerror: function(response){
@@ -176,12 +173,22 @@ function loadOptions()
 		});
 	}
 function do_login(){
-	if (username == null && password == null)
+	if (username != $('#username').val() && password != $('#password').val())
 		{
 		username = $('#username').val();
 		password = $('#password').val();
 		GM_setValue("username", username);
 		GM_setValue("password", password);	
+		}
+	if (GM_getValue("username"))
+		{
+		username = 	GM_getValue("username");
+		$('#username').val(username);
+		}
+	if (GM_getValue("password"))
+		{
+		password = GM_getValue("password");
+		$('#password').val(password);	
 		}
 	
 	url = server_url;
@@ -196,6 +203,16 @@ function do_login(){
 		},
 		onload: function(response){
 			l("login did not throw error");
+			if (response.responseText.search('please login') != -1)
+				{
+				alert("Please enter your username and password!");
+				l(response.responseText)
+				$('#options').show();
+				}
+			else
+				{
+				alert("server may be down: "+e.description);
+				}
 		},
 		onerror: function(response){
 			console.error('ERROR' + response.status);
@@ -212,6 +229,7 @@ function change_id_to_name()
 	{
 	if (changeNames)
 	{
+	
 	$("td.yui-dt8-col-instanceId div span").each(function()
 		{
 		var $cell = $(this);
@@ -243,6 +261,7 @@ function change_id_to_name()
 					else
 						{
 						alert("server may be down: "+e.description);
+						
 						}	
 					}
 				//description = json.description;
@@ -261,8 +280,9 @@ function change_id_to_name()
 			onerror: function(response){
                        		console.error('ERROR' + response.status );
                    		}
-			});
-		});
+			}); // end ajax
+		
+		}); // end each
 	}
 	}
 function getAWS_ID(obj)
@@ -280,27 +300,31 @@ function getAWS_ID(obj)
 		}
 	}
 function getMeta ()
-	{
-	l("Setting up meta data:",1);
-	change_id_to_name();
-	ready_btn = "<img src='cooltext446144499.png' onmouseover=\"this.src='cooltext446144499MouseOver.png';\" onmouseout=\"this.src='cooltext446144499.png';\" />"
-	$('#top_nav span#activate_aws_hack').html(ready_btn+'<span id=toggleOptions class=r-folink>Options</span></span>'); 
-
-	// Set listener for <ctrl> + click so we can edit our meta data
-	$("td.yui-dt8-col-instanceId div span").click(function (c) {
-		if (c.ctrlKey)
-			{
-			//window.open(href, windowName, useParams);	
-			var id = getAWS_ID($(this));
-			url = server_url;
-			url += "t_ms/?aws_id=" + id;
-			l("Total URL Requests: "+requests,1);
-			// invalidate cache since we are "editing"
-			cache_url = server_url + "t_ms/?aws_id=" + id;
-			mhash[cache_url] = '';
-			window.open(url);
-			}
-		});
+		{
+		l("Setting up meta data:",1);
+		change_id_to_name();
+		ready_btn = "<img src='cooltext446144499.png' onmouseover=\"this.src='cooltext446144499MouseOver.png';\" onmouseout=\"this.src='cooltext446144499.png';\" />"
+		$('#top_nav span#activate_aws_hack').html(ready_btn+'<span id=toggleOptions class=r-folink>Options</span></span>'); 
+		$('#toggleOptions').click(function ()
+				{
+				//l("toggled!");
+				$('#options').toggle();
+				});
+		// Set listener for <ctrl> + click so we can edit our meta data
+		$("td.yui-dt8-col-instanceId div span").click(function (c) {
+			if (c.ctrlKey)
+				{
+				//window.open(href, windowName, useParams);	
+				var id = getAWS_ID($(this));
+				url = server_url;
+				url += "t_ms/?aws_id=" + id;
+				l("Total URL Requests: "+requests,1);
+				// invalidate cache since we are "editing"
+				cache_url = server_url + "t_ms/?aws_id=" + id;
+				mhash[cache_url] = '';
+				window.open(url);
+				}
+			});
 
 	    $("td.yui-dt8-col-instanceId div span").hover(function (e) {
 		// look for hover over AWS_ID cell
@@ -452,7 +476,7 @@ var $originalContent;
 	$('#top_nav').append('<div id=mytop_nav><span id=activate_aws_hack > <img src='+server_url+'waiting.gif> <span id=toggleOptions class=r-folink>Options</span></span><div>')
 	$('body').append('<div id=mylog>Log: <br/><a href="#" id=clearLog>Clear the Log</a><hr /><div id=logtext>');
 	$('#mylog').hide();
-	// TODO: add loading image here
+	do_login();
 	
 	// load our options html from the server
 	loadOptions();
