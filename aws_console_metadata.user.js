@@ -86,7 +86,7 @@ function gmAjax(obj)
 	l("AJAX: adding " + obj.url + " to queue",1);
   	ajaxQueue.push(obj);
 	}
-var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com:8080/";
+var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com:80/";
 //var server_url = "http://localhost/";
 function loadCSS()
 	{
@@ -333,7 +333,8 @@ function getMeta ()
 		{
 		l("Setting up meta data:",1);
 		change_id_to_name();
-		ready_btn = "<img src='cooltext446144499.png' onmouseover=\"this.src='cooltext446144499MouseOver.png';\" onmouseout=\"this.src='cooltext446144499.png';\" />"
+		//ready_btn = "<img src='cooltext446144499.png' onmouseover=\"this.src='cooltext446144499MouseOver.png';\" onmouseout=\"this.src='cooltext446144499.png';\" />"
+		ready_btn = "<img src='"+server_url+"cooltext446144499.png' onmouseover=\"this.src='"+server_url+"cooltext446144499MouseOver.png';\" onmouseout=\"this.src='"+server_url+"ooltext446144499.png';\" />"
 		$('#top_nav span#activate_aws_hack').html(ready_btn+'<span id=toggleOptions class=r-folink>Options</span></span>'); 
 		$('#toggleOptions').click(function ()
 				{
@@ -442,8 +443,8 @@ function makeTT(e,dns,json)
 	
 	var html = '<div id="meta-info">';
 	html +=    '<b>Meta Data for: '+aws_id+'</b><span id=close_tip class=folink>X</span>';
-	html +=	   '<p>'+ json.name +'</p>';
-	html +=	   '<p>'+ json.description +'</p>';
+	html +=	   '<p><b>Name: </b>'+ json.name +'</p><hr>';
+	html +=	   '<p><b>Description: </b>'+ json.description +'</p>';
 	html +=	   '<p>'+ json.id +'</p>';
 	// don't put clippy object or browse link if there is no DNS	
 	if (dns != "")
@@ -542,6 +543,8 @@ var $originalContent;
 	loadEditForm();
 	// add navivation
 	$('#top_nav').append('<div id=mytop_nav><span id=activate_aws_hack > <img src='+server_url+'waiting.gif> <span id=toggleOptions class=r-folink>Options</span></span><div>')
+	
+
 	$('body').append('<div id=mylog>Log: <br/><a href="#" id=clearLog>Clear the Log</a><hr /><div id=logtext>');
 	$('#mylog').hide();
 	do_login();
