@@ -50,7 +50,7 @@ var mhash = new Object();
 var timeout = 2000;
 var table_load_timeout = 500;
 var changeNames = true;
-var debug = false;
+var debug = true;
 var showLog = false;
 var ajaxQueue = [];
 var requests = 0;
@@ -249,12 +249,12 @@ function updateOptions()
 	l("timeout set to: "+timeout,1);
 
 	}
-function change_id_to_name()
+function change_id_to_name(selector)
 	{
 	if (changeNames)
 	{
 	
-	$("td.yui-dt8-col-instanceId div span").each(function()
+	selector.each(function()
 		{
 		var $cell = $(this);
 		var aws_id = $cell.text();
@@ -294,15 +294,27 @@ function change_id_to_name()
 							}
 						}
 					}
-				//description = json.description;
 				if (name.search('error') == -1)
 					{
 					stopListen = true;
 					l("NAME: "+name,1);
 					$cell.text(name);
-					
+					//$cell.parent().append(' <span id=toggleTT>X</span>');
+					$cell.append(' <span id=toggleTT>X</span>');
 					$cell.attr("aws_id",aws_id);
+					//json.aws_id = aws_id;
+					addTT($cell,aws_id);
 					l($cell.text(),1);
+					$originalContent = $('#instances_datatable_hook').text();
+					stopListen = false;
+					}
+				else
+					{
+					stopListen = true;
+					$cell.append(' <span id=toggleTT>X</span>');
+					//$cell.attr("aws_id",aws_id);
+					//json.aws_id = aws_id;
+					addTT($cell,aws_id);
 					$originalContent = $('#instances_datatable_hook').text();
 					stopListen = false;
 					}
@@ -332,7 +344,17 @@ function getAWS_ID(obj)
 function getMeta ()
 		{
 		l("Setting up meta data:",1);
-		change_id_to_name();
+		var $aws_ids = $("td.yui-dt8-col-instanceId div span");
+		var $volume_ids = $("td.yui-dt9-col-volumeId div span");
+		if ($aws_ids)
+			{
+			change_id_to_name($aws_ids);
+			}
+		if ($volume_ids)
+			{
+			change_id_to_name($volume_ids);
+			}
+
 		//ready_btn = "<img src='cooltext446144499.png' onmouseover=\"this.src='cooltext446144499MouseOver.png';\" onmouseout=\"this.src='cooltext446144499.png';\" />"
 		ready_btn = "<img src='"+server_url+"cooltext446144499.png' onmouseover=\"this.src='"+server_url+"cooltext446144499MouseOver.png';\" onmouseout=\"this.src='"+server_url+"ooltext446144499.png';\" />"
 		$('#top_nav span#activate_aws_hack').html(ready_btn+'<span id=toggleOptions class=r-folink>Options</span></span>'); 
@@ -356,18 +378,20 @@ function getMeta ()
 				window.open(url);
 				}
 			});
-
-	    $("td.yui-dt8-col-instanceId div span").hover(function (e) {
-		// look for hover over AWS_ID cell
+	    l("Listiner should be in place",1);
+    } // end getMeta
+function addTT ($target, aws_id)
+	{
+	l("adding tooltip: "+$target.text(),1);
+	//var aws_id = aws_id;
+	$target.click(function (e) {
+		// look for click AWS_ID cell
 		var rowIndex = $(this).parent().parent().parent().prevAll().length;
 		l(rowIndex);
 		json = d_json;
 		// find public dns
 		var $trs = $(this).parent().parent().parent();
 		var dns = $trs.children('td.yui-dt8-col-dnsName').text();
-		// grab the AWS id in the current cell
-		var aws_id = getAWS_ID($(this));
-		//json.aws_id = aws_id;
 		// construct url for ajax	
 		var url = server_url;
 		url += 't_ms?aws_id='+aws_id;
@@ -424,14 +448,8 @@ function getMeta ()
 			}
 	    	}, function(){
 			//$('#info').remove();
-		}); // end hover
-
-	    		
-	    
-	    l("Listiner should be in place",1);
-	    
-
-    } // end getMeta
+		}); // end click
+	} // end addTT
 
 // make tool tip
 function makeTT(e,dns,json)
@@ -466,8 +484,9 @@ function makeTT(e,dns,json)
 	
 	// setup editing
 	$('#edit').click(function(){
-		$('#meta-info').html(edit_form);
+		$('#meta-info').append(edit_form);
 		$('#edit_form_submit').click(function(){
+			l("Edit Form Submit Clicked",1);
 			json.name = $('#edit_form_name').val();
 			json.description = $('#edit_form_description').val();
 			updateMeta(json);
