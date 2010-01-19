@@ -43,12 +43,14 @@
 // control pannel items: cache timeout, username/pass
 // need to make some buttons
 // Need to add server DNS to options.
+// Need to implement caching in the gmAjax function, also need to cache the first request
+// Add refresh button to tool tip and remove cache timeout
 
 var mhash = new Object();
 
 // need a load defaults method
 var timeout = 2000;
-var table_load_timeout = 500;
+var table_load_timeout = 4000;
 var changeNames = true;
 var debug = true;
 var showLog = false;
@@ -56,6 +58,8 @@ var ajaxQueue = [];
 var requests = 0;
 var username;
 var password;
+var e = "";
+//var interval;
 var d_json = new Object();
 d_json.name;
 d_json.description = "<span class=rl-folink id=edit>Click here to Enter Meta Information</span>";
@@ -226,7 +230,6 @@ function do_login(){
 			"Content-Type": "application/x-www-form-urlencoded"
 		},
 		onload: function(response){
-			l("login did not throw error");
 			if (response.responseText.search('please login') != -1)
 				{
 				alert("Please enter your username and password!");
@@ -235,10 +238,11 @@ function do_login(){
 				}
 			else
 				{
-				alert("server may be down: "+e.description);
+				l("login seems to have worked",1);
 				}
 		},
 		onerror: function(response){
+			alert("server may be down: "+e.description);
 			console.error('ERROR' + response.status);
 			}
 		});
@@ -249,19 +253,38 @@ function updateOptions()
 	l("timeout set to: "+timeout,1);
 
 	}
-function change_id_to_name(selector)
+function change_id_to_name(selector,selector_count,target,originalContent)
 	{
 	if (changeNames)
 	{
 	
+	//var selector_count = selector.length;
+	var counter = 0;
+	l('changing ids: '+selector.length,1);
+	stopListen = true;
+	running = true;
 	selector.each(function()
 		{
+		
 		var $cell = $(this);
+		l($('#toggleTT',$cell).text(),1);	
+		if ($('#toggleTT',$cell).text().search("X") != -1)
+			{
+			l("alread been added fool",1);
+			//alert ("PROBLEM: "+target);
+			if (counter == selector_count)
+				{
+				l("turning off listener",1);
+				changeMonitor(target);
+				}
+			return false;
+
+			}
 		var aws_id = $cell.text();
 		aws_id = jQuery.trim(aws_id);
 		l(aws_id);
 		var name = "error";
-		
+			
 		url = server_url;
 		url += "t_ms/?aws_id=" + aws_id + "&getName=1";
 		gmAjax({
@@ -269,6 +292,8 @@ function change_id_to_name(selector)
 			method: 'GET',
 			onload: function(response)
 				{
+				counter++;
+					
 				//name = response.responseText;
 				data = response.responseText;
 				if (data != null) 
@@ -290,13 +315,12 @@ function change_id_to_name(selector)
 						}
 						else {
 							//alert("server may be down: " + e.description);
-							l("Server ERROR requesting meta info for aws_id: "+id)
+							l("Server ERROR requesting meta info for aws_id: "+aws_id)
 							}
 						}
 					}
 				if (name.search('error') == -1)
 					{
-					stopListen = true;
 					l("NAME: "+name,1);
 					$cell.text(name);
 					//$cell.parent().append(' <span id=toggleTT>X</span>');
@@ -304,22 +328,30 @@ function change_id_to_name(selector)
 					$cell.attr("aws_id",aws_id);
 					//json.aws_id = aws_id;
 					addTT($cell,aws_id);
-					l($cell.text(),1);
-					$originalContent = $('#instances_datatable_hook').text();
-					stopListen = false;
+					//l($cell.text(),1);
+					refreshContent(originalContent,target);
 					}
 				else
 					{
-					stopListen = true;
 					$cell.append(' <span id=toggleTT>X</span>');
 					//$cell.attr("aws_id",aws_id);
 					//json.aws_id = aws_id;
 					addTT($cell,aws_id);
-					$originalContent = $('#instances_datatable_hook').text();
-					stopListen = false;
+					refreshContent(originalContent,target);
 					}
+				l("Count: "+counter+" of: "+selector_count,1);
+				if (counter == selector_count)
+					{
+					l("turning off listener",1);
+					running = false;
+					stopListen = false;
+					changeMonitor(target);
+					}
+			
 				},
 			onerror: function(response){
+				counter++;
+
                        		console.error('ERROR' + response.status );
                    		}
 			}); // end ajax
@@ -341,18 +373,22 @@ function getAWS_ID(obj)
 		return id;
 		}
 	}
-function getMeta ()
+function getMeta (target,originalContent)
 		{
 		l("Setting up meta data:",1);
-		var $aws_ids = $("td.yui-dt8-col-instanceId div span");
-		var $volume_ids = $("td.yui-dt9-col-volumeId div span");
-		if ($aws_ids)
+		var $aws_ids = $("td.yui-dt-col-instanceId div span");
+		var $volume_ids = $("td.yui-dt-col-volumeId div span");
+		if ($aws_ids != "")
 			{
-			change_id_to_name($aws_ids);
+			l("searching for instance data",1);
+			var selector_count = $aws_ids.length;
+			change_id_to_name($aws_ids,selector_count,target);
 			}
-		if ($volume_ids)
+		if ($volume_ids != "")
 			{
-			change_id_to_name($volume_ids);
+			l("searching for volume stuff",1);
+			var selector_count = $volume_ids.length;
+			change_id_to_name($volume_ids,selector_count,target);
 			}
 
 		//ready_btn = "<img src='cooltext446144499.png' onmouseover=\"this.src='cooltext446144499MouseOver.png';\" onmouseout=\"this.src='cooltext446144499.png';\" />"
@@ -379,6 +415,7 @@ function getMeta ()
 				}
 			});
 	    l("Listiner should be in place",1);
+	    
     } // end getMeta
 function addTT ($target, aws_id)
 	{
@@ -550,10 +587,45 @@ function l (s,newline)
 		return;
 		}
 	}
+function refreshContent(originalContent,target)
+	{
+	//l("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX   Refreshing Content",1);
+	originalContent = $(target).text();
+	}
+function changeMonitor(target)
+	{
+	
+	var originalContent = $(target).text();
+	var stopListen = false;
+	var refreshContent = false;
+	var running = false;
+	
+	var interval = setInterval(function(){
+		// if we are changing content ignore the changes
+		if (running == true) {
+			l("WAITING FOR CONTENT TO BE CHANGED",1);
+			//originalContent = $('#instances_datatable_hook').text();
+			}
+		else {
+			//l("checking content: "+target,1);
+			if (originalContent != $(target).text()) {
+				l(" --Content Changed-- ");
+				originalContent = $(target).text();
+
+				// set timeout so table can load, 
+				//setTimeout(getMeta, table_load_timeout);
+				
+				clearInterval(interval);
+				getMeta(target,originalContent);
+				}
+			}
+		
+		
+	},500);
+	}
 
 // main jQuery funciton *** alias for document.ready
-var stopListen = false;
-var $originalContent;
+
 
 (function() {
 	// insert css we will use for our tool tip stuff
@@ -572,7 +644,7 @@ var $originalContent;
 	loadOptions();
 	
 	
-	
+		
 	// This is for our log hack.	
 	
 	$('#clearLog').click(function(){
@@ -580,27 +652,14 @@ var $originalContent;
 	});
 	
 	// Listener for instance table changes
-	var interval;
-	$originalContent = $('#instances_datatable_hook').text();
-	interval = setInterval(function(){
-		// if we are changing content ignore the changes
-		if (stopListen) {
-			//$originalContent = $('#instances_datatable_hook').text();
-		}
-		else {
-			if ($originalContent != $('#instances_datatable_hook').text()) {
-				l(" --Content Changed-- ");
-				$originalContent = $('#instances_datatable_hook').text();
-				// set timeout so table can load, 
-				// TODO: may want to make this user settable
-				setTimeout(getMeta, table_load_timeout);
-				//clearInterval(interval);
-			}
-		}
-	}, 500);
+	changeMonitor('#instances_datatable_hook');	
+	changeMonitor('#volumes_datatable_hook');
 	// setup for test page /jqtest/table.html
+	var test_counter = 2;
 	$('#test').click(function(){
-		$("th:first").text("INSTANCE ID");
+		$("#instances_datatable_hook th").text("INSTANCE ID"+test_counter);
+		$("#volumes_datatable_hook th").text("xxxxx"+test_counter);
+		test_counter++;
 		//setTimeout('th.toggle()',200);
 	});
 	}()); // end doc ready
