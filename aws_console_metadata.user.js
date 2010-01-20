@@ -111,6 +111,33 @@ function loadCSS()
                     	}
 		});
 	}
+function checkCache(url)
+	{
+	l("CHECKING:    "+url)
+	object_counter =0;
+	for (var i in mhash)
+		{
+		object_counter++;
+		}
+	l(object_counter,1);
+	if (mhash[url])
+			{
+			
+  			var now =  new Date().getTime();
+			var ctime = mhash[url].time + timeout;
+			l("Now: "+ now + "Cache Time: "+ctime,l);
+			json = mhash[url].content;
+			// Commenting out the cache timeout, should use a refresh button, or invalidate on edit
+			//if ( now > ctime )
+      		//		{
+			//	l("cache expired for:" +url,1);
+			//	mhash[url] = '';
+				// this is the old result, need to get a fresh one!
+			//	}
+			return json;
+			}	
+	
+	}
 function loadEditForm()
 	{
 	edit_form = "FAIL";
@@ -242,7 +269,7 @@ function do_login(){
 				}
 		},
 		onerror: function(response){
-			alert("server may be down: "+e.description);
+			alert("Login: server may be down: "+e.description);
 			console.error('ERROR' + response.status);
 			}
 		});
@@ -286,76 +313,75 @@ function change_id_to_name(selector,selector_count,target,originalContent)
 		var name = "error";
 			
 		url = server_url;
-		url += "t_ms/?aws_id=" + aws_id + "&getName=1";
-		gmAjax({
-			url: url,
-			method: 'GET',
-			onload: function(response)
-				{
-				counter++;
-					
-				//name = response.responseText;
-				data = response.responseText;
-				if (data != null) 
-					{
-					try {
-						t_json = JSON.parse(data);
-						if (t_json != null)
-							{
-							json = t_json;
-							name = json.name;
-							}
-						
-						} 
-					catch (e) {
-						if (response.responseText.search('please login') != -1) {
-							alert("Please enter your username and password! " + e.description);
-							l(response.responseText);
-							$('#options').show();
-						}
-						else {
-							//alert("server may be down: " + e.description);
-							l("Server ERROR requesting meta info for aws_id: "+aws_id)
-							}
-						}
-					}
-				if (name.search('error') == -1)
-					{
-					l("NAME: "+name,1);
-					$cell.text(name);
-					//$cell.parent().append(' <span id=toggleTT>X</span>');
-					$cell.append(' <span id=toggleTT>X</span>');
-					$cell.attr("aws_id",aws_id);
-					//json.aws_id = aws_id;
-					addTT($cell,aws_id);
-					//l($cell.text(),1);
-					refreshContent(originalContent,target);
-					}
-				else
-					{
-					$cell.append(' <span id=toggleTT>X</span>');
-					//$cell.attr("aws_id",aws_id);
-					//json.aws_id = aws_id;
-					addTT($cell,aws_id);
-					refreshContent(originalContent,target);
-					}
-				l("Count: "+counter+" of: "+selector_count,1);
-				if (counter == selector_count)
-					{
-					l("turning off listener",1);
-					running = false;
-					stopListen = false;
-					changeMonitor(target);
-					}
-			
-				},
-			onerror: function(response){
-				counter++;
-
-                       		console.error('ERROR' + response.status );
-                   		}
-			}); // end ajax
+		url += "t_ms?aws_id=" + aws_id;
+		json = checkCache(url);
 		
+		if (json == null) {
+			//l(json,1);
+			gmAjax({
+				url: url,
+				method: 'GET',
+				onload: function(response){
+					counter++;
+					data = response.responseText;
+					if (data != null) {
+						try {
+							t_json = JSON.parse(data);
+							if (t_json.name != null) {
+								json = t_json;
+								mhash[url] = new Object();
+								mhash[url].content = json;
+								mhash[url].time = new Date().getTime();
+								name = json.name;
+								}
+							
+							} 
+						catch (e) {
+							if (response.responseText.search('please login') != -1) {
+								alert("Please enter your username and password! " + e.description);
+								l(response.responseText);
+								$('#options').show();
+								}
+							else {
+								//alert("CITN: server may be down: " + response.responseText);
+								l("Server ERROR requesting meta info for aws_id: " + aws_id)
+								}
+							}
+						}
+					if (name.search('error') == -1) {
+						l("NAME: " + name, 1);
+						$cell.text(name);
+						//$cell.parent().append(' <span id=toggleTT>X</span>');
+						$cell.append(' <span id=toggleTT>X</span>');
+						$cell.attr("aws_id", aws_id);
+						//json.aws_id = aws_id;
+						addTT($cell, aws_id);
+						//l($cell.text(),1);
+						refreshContent(originalContent, target);
+					}
+					else {
+						$cell.append(' <span id=toggleTT>X</span>');
+						//$cell.attr("aws_id",aws_id);
+						//json.aws_id = aws_id;
+						addTT($cell, aws_id);
+						refreshContent(originalContent, target);
+					}
+					l("Count: " + counter + " of: " + selector_count, 1);
+					if (counter == selector_count) {
+						l("turning off listener", 1);
+						running = false;
+						stopListen = false;
+						changeMonitor(target);
+					}
+					
+				},
+				onerror: function(response){
+					counter++;
+					
+					console.error('ERROR' + response.status);
+				}
+			  }); // end ajax
+			}
 		}); // end each
 	}
 	}
@@ -425,36 +451,19 @@ function addTT ($target, aws_id)
 		// look for click AWS_ID cell
 		var rowIndex = $(this).parent().parent().parent().prevAll().length;
 		l(rowIndex);
-		json = d_json;
 		// find public dns
 		var $trs = $(this).parent().parent().parent();
-		var dns = $trs.children('td.yui-dt8-col-dnsName').text();
+		var dns = $trs.children('td.yui-dt-col-dnsName').text();
 		// construct url for ajax	
 		var url = server_url;
 		url += 't_ms?aws_id='+aws_id;
 		// check cache for result var timeout is caching time in milliseconds
 		var responseText = "FAIL";
-		if (mhash[url])
-			{
-  			var now =  new Date().getTime();
-			var ctime = mhash[url].time + timeout;
-			l("Now: "+ now + "Cache Time: "+ctime,l);
-			json = mhash[url].content;
-			if ( now > ctime )
-      				{
-				l("cache expired for:" +url,1);
-				mhash[url] = '';
-				// this is the old result, need to get a fresh one!
-				makeTT(e,dns,json);
-				}
-			else
-				{
-				json = mhash[url].content;
-				json.description += " C";
-				makeTT(e,dns,json);
-				}
-			}
-		else
+		
+		// check cache 
+		json = checkCache(url);
+		
+		if (json == null)
 			{
 			gmAjax({
 				url: url,
@@ -483,9 +492,11 @@ function addTT ($target, aws_id)
                     			}
 			});
 			}
-	    	}, function(){
-			//$('#info').remove();
-		}); // end click
+		else
+			{
+			makeTT(e, dns, json);
+			}
+	    }); // end click
 	} // end addTT
 
 // make tool tip
@@ -628,6 +639,7 @@ function changeMonitor(target)
 
 
 (function() {
+	//var mhash = new Object();
 	// insert css we will use for our tool tip stuff
 	loadCSS();
 	// grab edit meta form
