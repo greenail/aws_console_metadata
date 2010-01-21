@@ -58,6 +58,7 @@ var ajaxQueue = [];
 var requests = 0;
 var username;
 var password;
+//var originalContent = "BAR";
 var e = "";
 //var interval;
 
@@ -192,6 +193,11 @@ function loadOptions()
 				{
 				//l("toggled!");
 				$('#options').toggle();
+				});
+			$('#refresh').click(function ()
+				{
+				l("refresh!");
+				originalContent = "FOOOOOOOOOOOOOOOOO";
 				});
 			$('#logToggle').click(function()
 				{
@@ -608,29 +614,15 @@ function changeMonitor(target,cell,mhash)
 	var running = false;
 	
 	var interval = setInterval(function(){
-		// if we are changing content ignore the changes
-		if (stopListen == true) {
-			l(".");
-			//originalContent = $('#instances_datatable_hook').text();
+		if (originalContent != $(target).text()) 
+			{
+			l(" --Content Changed-- ");
+			originalContent = $(target).text();
+			clearInterval(interval);
+			getMeta(target,cell,mhash);
+			//setTimeout(getMeta, table_load_timeout);
 			}
-		else {
-			//l("checking content: "+target,1);
-			//l("*");
-			if (originalContent != $(target).text()) {
-				l(" --Content Changed-- ");
-				originalContent = $(target).text();
-
-				// set timeout so table can load, 
-				
-				
-				clearInterval(interval);
-				getMeta(target,cell,mhash);
-				//setTimeout(getMeta, table_load_timeout);
-				}
-			}
-		
-		
-	},1500);
+		},1500);
 	}
 
 // main jQuery funciton *** alias for document.ready
@@ -644,7 +636,7 @@ function changeMonitor(target,cell,mhash)
 	// grab edit meta form
 	loadEditForm();
 	// add navivation
-	$('#top_nav').append('<div id=mytop_nav><span id=activate_aws_hack > <img src='+server_url+'waiting.gif> <span id=toggleOptions class=r-folink>Options</span></span><div>')
+	$('#top_nav').append('<div id=mytop_nav><span id=activate_aws_hack > <img src='+server_url+'waiting.gif> </span><span id=toggleOptions class=r-folink>Options</span><span id=refresh class=folink>Refresh</span><div>')
 	
 
 	$('body').append('<div id=mylog>Log: <br/><a href="#" id=clearLog>Clear the Log</a><hr /><div id=logtext>');
