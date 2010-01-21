@@ -11,7 +11,7 @@
 //All rights reserved.
 //
 //Redistribution and use in source and binary forms, with or without
-//modification, are permitted provided that the following conditions are met:
+//modification, are permitted povided that the following conditions are met:
 //    * Redistributions of source code must retain the above copyright
 //      notice, this list of conditions and the following disclaimer.
 //    * Redistributions in binary form must reproduce the above copyright
@@ -50,7 +50,7 @@ var mhash = new Object();
 
 // need a load defaults method
 var timeout = 2000;
-var table_load_timeout = 4000;
+var table_load_timeout = 1000;
 var changeNames = true;
 var debug = true;
 var showLog = false;
@@ -60,9 +60,7 @@ var username;
 var password;
 var e = "";
 //var interval;
-var d_json = new Object();
-d_json.name;
-d_json.description = "<span class=rl-folink id=edit>Click here to Enter Meta Information</span>";
+
 var edit_form = "Server Error";
 // this gets us our XSS
 var processAjaxQueue = function(){
@@ -111,22 +109,22 @@ function loadCSS()
                     	}
 		});
 	}
-function checkCache(url)
+function checkCache(url,mhash)
 	{
-	l("CHECKING:    "+url)
+	l("CHECKING:    "+url+ "Cache Count: "+mhash.count)
 	object_counter =0;
 	for (var i in mhash)
 		{
 		object_counter++;
 		}
-	l(object_counter,1);
+	l("Cach Count: " +object_counter,1);
 	if (mhash[url])
 			{
 			
-  			var now =  new Date().getTime();
-			var ctime = mhash[url].time + timeout;
-			l("Now: "+ now + "Cache Time: "+ctime,l);
-			json = mhash[url].content;
+  			//var now =  new Date().getTime();
+			//var ctime = mhash[url].time + timeout;
+			//l("Now: "+ now + "Cache Time: "+ctime,l);
+			json = mhash[url];
 			// Commenting out the cache timeout, should use a refresh button, or invalidate on edit
 			//if ( now > ctime )
       		//		{
@@ -218,7 +216,7 @@ function loadOptions()
 				l(" --Submit clicked-- ");
 				updateOptions();
 				});
-			$('#login').click(do_login);
+			$('#login').click(do_login());
 			
 			},
 		onerror: function(response){
@@ -280,14 +278,14 @@ function updateOptions()
 	l("timeout set to: "+timeout,1);
 
 	}
-function change_id_to_name(selector,selector_count,target,originalContent)
+function change_id_to_name(selector,selector_count,target,cell,mhash)
 	{
 	if (changeNames)
 	{
 	
 	//var selector_count = selector.length;
 	var counter = 0;
-	l('changing ids: '+selector.length,1);
+	l('changing ids: '+selector_count+' Cell '+cell,1);
 	stopListen = true;
 	running = true;
 	selector.each(function()
@@ -301,20 +299,22 @@ function change_id_to_name(selector,selector_count,target,originalContent)
 			//alert ("PROBLEM: "+target);
 			if (counter == selector_count)
 				{
-				l("turning off listener",1);
-				changeMonitor(target);
+				l("XXX turning off listener",1);
+				
 				}
+			stopListen = false;
+			changeMonitor(target,cell,mhash);
 			return false;
 
 			}
 		var aws_id = $cell.text();
 		aws_id = jQuery.trim(aws_id);
 		l(aws_id);
-		var name = "error";
+		var name;
 			
 		url = server_url;
 		url += "t_ms?aws_id=" + aws_id;
-		json = checkCache(url);
+		json = checkCache(url,mhash);
 		
 		if (json == null) {
 			//l(json,1);
@@ -324,55 +324,46 @@ function change_id_to_name(selector,selector_count,target,originalContent)
 				onload: function(response){
 					counter++;
 					data = response.responseText;
-					if (data != null) {
-						try {
-							t_json = JSON.parse(data);
-							if (t_json.name != null) {
-								json = t_json;
-								mhash[url] = new Object();
-								mhash[url].content = json;
-								mhash[url].time = new Date().getTime();
-								name = json.name;
-								}
-							
-							} 
-						catch (e) {
-							if (response.responseText.search('please login') != -1) {
-								alert("Please enter your username and password! " + e.description);
-								l(response.responseText);
-								$('#options').show();
-								}
-							else {
-								//alert("CITN: server may be down: " + response.responseText);
-								l("Server ERROR requesting meta info for aws_id: " + aws_id)
-								}
-							}
+					t_json = JSON.parse(data);
+					if (t_json != null) {
+						json = t_json;
+						mhash[url] = new Object();
+						mhash[url] = json;
+						//mhash[url].time = new Date().getTime();
+						l("Adding "+ url+ " to Cache!")
+						mhash.count++;
+						name = json.name;
 						}
-					if (name.search('error') == -1) {
+					else
+						{
+						l("ERROR: no name!");
+						}
+					if (name) 
+						{
 						l("NAME: " + name, 1);
 						$cell.text(name);
 						//$cell.parent().append(' <span id=toggleTT>X</span>');
 						$cell.append(' <span id=toggleTT>X</span>');
 						$cell.attr("aws_id", aws_id);
 						//json.aws_id = aws_id;
-						addTT($cell, aws_id);
+						addTT($cell, aws_id,mhash);
 						//l($cell.text(),1);
-						refreshContent(originalContent, target);
-					}
-					else {
+						
+						}
+					else 
+						{
 						$cell.append(' <span id=toggleTT>X</span>');
-						//$cell.attr("aws_id",aws_id);
-						//json.aws_id = aws_id;
-						addTT($cell, aws_id);
-						refreshContent(originalContent, target);
-					}
+						addTT($cell, aws_id,mhash);
+						}
 					l("Count: " + counter + " of: " + selector_count, 1);
 					if (counter == selector_count) {
+						//refreshContent(originalContent, target);
 						l("turning off listener", 1);
 						running = false;
 						stopListen = false;
-						changeMonitor(target);
-					}
+						changeMonitor(target,cell,mhash);
+						}
+					
 					
 				},
 				onerror: function(response){
@@ -381,6 +372,10 @@ function change_id_to_name(selector,selector_count,target,originalContent)
 					console.error('ERROR' + response.status);
 				}
 			  }); // end ajax
+			}
+		else
+			{
+			l("using Cached JSON");
 			}
 		}); // end each
 	}
@@ -399,23 +394,17 @@ function getAWS_ID(obj)
 		return id;
 		}
 	}
-function getMeta (target,originalContent)
+function getMeta (target,cell,mhash)
 		{
 		l("Setting up meta data:",1);
-		var $aws_ids = $("td.yui-dt-col-instanceId div span");
-		var $volume_ids = $("td.yui-dt-col-volumeId div span");
-		if ($aws_ids != "")
+		var $ids = $(cell);
+		if ($ids != "")
 			{
-			l("searching for instance data",1);
-			var selector_count = $aws_ids.length;
-			change_id_to_name($aws_ids,selector_count,target);
+			
+			var selector_count = $ids.length;
+			change_id_to_name($ids,selector_count,target,cell,mhash);
 			}
-		if ($volume_ids != "")
-			{
-			l("searching for volume stuff",1);
-			var selector_count = $volume_ids.length;
-			change_id_to_name($volume_ids,selector_count,target);
-			}
+		
 
 		//ready_btn = "<img src='cooltext446144499.png' onmouseover=\"this.src='cooltext446144499MouseOver.png';\" onmouseout=\"this.src='cooltext446144499.png';\" />"
 		ready_btn = "<img src='"+server_url+"cooltext446144499.png' onmouseover=\"this.src='"+server_url+"cooltext446144499MouseOver.png';\" onmouseout=\"this.src='"+server_url+"ooltext446144499.png';\" />"
@@ -443,11 +432,11 @@ function getMeta (target,originalContent)
 	    l("Listiner should be in place",1);
 	    
     } // end getMeta
-function addTT ($target, aws_id)
+function addTT ($cell, aws_id,mhash)
 	{
-	l("adding tooltip: "+$target.text(),1);
+	l("adding tooltip: "+$cell.text(),1);
 	//var aws_id = aws_id;
-	$target.click(function (e) {
+	$cell.click(function (e) {
 		// look for click AWS_ID cell
 		var rowIndex = $(this).parent().parent().parent().prevAll().length;
 		l(rowIndex);
@@ -461,10 +450,11 @@ function addTT ($target, aws_id)
 		var responseText = "FAIL";
 		
 		// check cache 
-		json = checkCache(url);
+		json = checkCache(url,mhash);
 		
 		if (json == null)
 			{
+			
 			gmAjax({
 				url: url,
 				method: 'GET',
@@ -476,14 +466,19 @@ function addTT ($target, aws_id)
 						{
 						json = t_json;
 						mhash[url] = new Object();
-						mhash[url].content = json;
-						mhash[url].time = new Date().getTime();
+						mhash[url] = json;
+						//mhash[url].time = new Date().getTime();
+						mhash.count++;
 						makeTT(e, dns, json);
 						}
 					else
 						{
+						// nothing exists so present edits
+						json = new Object;
 						json.aws_id = aws_id;
-						l("JSON was not valid, using defaults",1)
+						json.name = aws_id;
+						json.description = "<span class=rl-folink id=edit>Click here to Enter Meta Information</span>";
+						//l("JSON was not valid, using defaults",1)
 						makeTT(e, dns, json);	
 						}
 					},
@@ -494,6 +489,7 @@ function addTT ($target, aws_id)
 			}
 		else
 			{
+			l("using cached json",1);
 			makeTT(e, dns, json);
 			}
 	    }); // end click
@@ -603,9 +599,9 @@ function refreshContent(originalContent,target)
 	//l("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX   Refreshing Content",1);
 	originalContent = $(target).text();
 	}
-function changeMonitor(target)
+function changeMonitor(target,cell,mhash)
 	{
-	
+	l("starting Monitor for: "+target+" and: "+cell);
 	var originalContent = $(target).text();
 	var stopListen = false;
 	var refreshContent = false;
@@ -613,26 +609,28 @@ function changeMonitor(target)
 	
 	var interval = setInterval(function(){
 		// if we are changing content ignore the changes
-		if (running == true) {
-			l("WAITING FOR CONTENT TO BE CHANGED",1);
+		if (stopListen == true) {
+			l(".");
 			//originalContent = $('#instances_datatable_hook').text();
 			}
 		else {
 			//l("checking content: "+target,1);
+			//l("*");
 			if (originalContent != $(target).text()) {
 				l(" --Content Changed-- ");
 				originalContent = $(target).text();
 
 				// set timeout so table can load, 
-				//setTimeout(getMeta, table_load_timeout);
+				
 				
 				clearInterval(interval);
-				getMeta(target,originalContent);
+				getMeta(target,cell,mhash);
+				//setTimeout(getMeta, table_load_timeout);
 				}
 			}
 		
 		
-	},500);
+	},1500);
 	}
 
 // main jQuery funciton *** alias for document.ready
@@ -640,6 +638,7 @@ function changeMonitor(target)
 
 (function() {
 	//var mhash = new Object();
+	mhash.count = 0;
 	// insert css we will use for our tool tip stuff
 	loadCSS();
 	// grab edit meta form
@@ -664,13 +663,14 @@ function changeMonitor(target)
 	});
 	
 	// Listener for instance table changes
-	changeMonitor('#instances_datatable_hook');	
-	changeMonitor('#volumes_datatable_hook');
+	changeMonitor('#instances_datatable_hook',"td.yui-dt-col-instanceId div span",mhash);	
+	changeMonitor('#volumes_datatable_hook',"td.yui-dt-col-volumeId div span",mhash);
+	
 	// setup for test page /jqtest/table.html
 	var test_counter = 2;
 	$('#test').click(function(){
 		$("#instances_datatable_hook th").text("INSTANCE ID"+test_counter);
-		$("#volumes_datatable_hook th").text("xxxxx"+test_counter);
+		//$("#volumes_datatable_hook th").text("xxxxx"+test_counter);
 		test_counter++;
 		//setTimeout('th.toggle()',200);
 	});
