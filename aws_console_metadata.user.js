@@ -101,8 +101,12 @@ jQuery(document).ready(function($){
 		{
 		if(debug)
 			{
-			console.log(text);
-		
+			//console.log(text);
+			if(unsafeWindow.console != undefined)
+				{
+				unsafeWindow.console.log(text)	
+				}
+			
 			//log.append(text+'<br/>');	
 			}
 			
@@ -201,7 +205,7 @@ jQuery(document).ready(function($){
 	monitor('#instances_datatable_hook',"td.yui-dt-col-instanceId div span");	
 	monitor('#volumes_datatable_hook',"td.yui-dt-col-volumeId div span");
 	
-	console.log("exit main context");
+	l("exit main context");
 	// end jQuery
 }); 
 }, false);
