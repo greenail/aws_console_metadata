@@ -174,7 +174,7 @@ jQuery(document).ready(function($){
 				clearInterval(interval);
 				originalContent = $(target).text();
 				var $ids = $(selector);
-				addCellClick($ids);
+				
 				if ($ids != "") 
 					{
 					id_count = $ids.length;
@@ -217,21 +217,7 @@ jQuery(document).ready(function($){
 		{
 		l(response.responseText);
 		}
-	function addCellClick($ids)
-		{
-		// add click handler using event delegation
-		$ids.each(function (){
-			var cell = $(this);
-			if (!cell.attr("aws_id"))
-				{
-				cell.click(function(event){
-					//$clicked = $(this);
-					aws_id = $(this).attr("aws_id");
-					alert("AWS_ID: "+ aws_id);
-					});
-				}
-			});
-		}
+	
 	function Cache()
 		{
 		var c = new Object;
@@ -260,7 +246,7 @@ jQuery(document).ready(function($){
 			return csize;	
 			}
 		}
-	function updateCell(response,cell,url,run_count)
+	function updateCell(response,$cell,url,run_count)
 		{
 		l("response: Cache Size:"+cache.size+" Run Count: "+run_count+" of: "+id_count);
 		l(response.responseText);
@@ -275,7 +261,17 @@ jQuery(document).ready(function($){
 			//p("Name: "+json.name);
 			l("Name: "+json.name);
 			cache.setJSON(url,json);
-			changeToName(cell,json);
+			changeToName($cell,json);
+			}
+		else
+			{
+			// TODO add pretty pic for edit
+			var aws_id = getAWS_ID($cell);
+			$cell.append(" <span id=editTT>?</span>");
+			$('#editTT',$cell).click(function(event){
+				// TODO add call to edit function here.
+				alert("AWS_ID: "+ aws_id);
+				});
 			}
 		
 		}
@@ -283,9 +279,16 @@ jQuery(document).ready(function($){
 		{
 		if (!$cell.attr("aws_id"))
 			{
-			$cell.attr("aws_id",json.aws_id)
-			$cell.text(json.name);	
+			$cell.attr("aws_id",json.aws_id);
+			// TODO add nice graphic
+			$cell.text(json.name);
+			$cell.append(" <span id=toggleTT>X</span>");
 			}
+		$('#toggleTT',$cell).click(function(event){
+			//$clicked = $(this);
+			aws_id = $cell.attr("aws_id");
+			alert("AWS_ID: "+ aws_id);
+			});
 		 
 		}
 	
