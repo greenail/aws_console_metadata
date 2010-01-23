@@ -157,7 +157,15 @@ jQuery(document).ready(function($){
 			test_counter++;
 			});		
 		 $('#top_nav').append('<div id=mytop_nav><span id=activate_aws_hack > <img src='+server_url+'waiting.gif> </span><span id=toggleOptions class=r-folink>Options</span><span id=refresh class=folink>Refresh</span><div>')
- 
+ 		url += "style.html";
+		fetchPage(url,loadCSS);
+		url = server_url;
+		url += "edit.html";
+		fetchPage(url,loadEditForm);
+		url = server_url;
+		url += "options.html";
+		fetchPage(url,loadOptions);
+		makeTT();
 		}
 	function fetchPage(url,callback)
 		{
@@ -214,6 +222,7 @@ jQuery(document).ready(function($){
 		$('#toggleOptions').click(function ()
 			{
 			//l("toggled!");
+			$('#totalAjax').text(requests);
 			$('#options').toggle();
 			});
 		$('#refresh').click(function ()
@@ -285,6 +294,81 @@ jQuery(document).ready(function($){
 			onerror: handleError
 			});
 		}
+	function clippy(url)
+		{
+		var clippy = ['<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000"',
+		            'width="110"',
+		           ' height="14"',
+		            'id="clippy" >',
+		     '<param name="movie" value="'+server_url+'clippy.swf"/>',
+		     '<param name="allowScriptAccess" value="always" />',
+		     '<param name="quality" value="high" />',
+		     '<param name="scale" value="noscale" />',
+		     '<param NAME="FlashVars" value="text='+url+'">',
+		     '<embed src="'+server_url+'clippy.swf"',
+		           'width="110"',
+		           'height="14"',
+		           'name="clippy"',
+		           'quality="high"',
+		           'allowScriptAccess="always"',
+		           'type="application/x-shockwave-flash"',
+		           'pluginspage="http://www.macromedia.com/go/getflashplayer"',
+		           'FlashVars="text='+url+'"',
+		     '/>',
+		'</object>'].join('');
+		 
+		return clippy;
+		}// end clippy
+	function makeTT()
+		{
+		var html = '<div id="meta-info">';
+		html += '<b>Meta Data for: </b><span id=close_tip class=folink>X</span>';
+		html += '<p><b>Name: </b></p><hr>';
+		html += '<p><b>Description: </b></p>';
+		html += '<p></p>';
+		html += '</div>';
+		$('body').append(html);
+		$('#meta-info').hide();	
+		}
+	function updateTT(e,dns,json)
+		{
+		// construct tooltip
+		var html = '<b>Meta Data for: '+json.aws_id+'</b><span id=close_tip class=folink>X</span>';
+		html += '<p><b>Name: </b>'+ json.name +'</p><hr>';
+		html += '<p><b>Description: </b>'+ json.description +'</p>';
+		html += '<p>'+ json.id +'</p>';
+		// don't put clippy object or browse link if there is no DNS
+		if (dns != "")
+			{
+			var clippyObject = clippy(dns);
+			html += clippyObject;
+			html += '<a href=http://'+dns+'>Browse</a>';
+			}
+		$('#meta-info').css('top', e.pageY + -20).css('left', e.pageX + 40);
+		$('#meta-info').html(html)
+		//$('#meta-info').html(html).fadeIn(400);
+		// close tooltip
+		$('span#close_tip').click(function(){
+			l(" --close tip clicked-- ");
+			$('#meta-info').hide();
+			});
+		
+		}
+	function editTT(e,json)
+		{
+		$('#meta-info').css('top', e.pageY + -20).css('left', e.pageX + 40);
+		$('#meta-info').html(edit_form);
+		$('#edit_form_submit').click(function(){
+			l("Edit Form Submit Clicked",1);
+			json.name = $('#edit_form_name').val();
+			json.description = $('#edit_form_description').val();
+			sendJSON(json);
+			});
+		} // end makeTT (make tooltip)
+	function sendJSON(json)
+		{
+			
+		}	
 	function loadEditForm(response)
 		{
 		edit_form = response.responseText;	
@@ -486,7 +570,10 @@ function updateNames(target,selector)
 			$cell.append(" <span id=editTT class=btn>?</span>");
 			$('#editTT',$cell).click(function(event){
 				// TODO add call to edit function here.
-				alert("AWS_ID: "+ aws_id);
+				json = new Object;
+				json.aws_id = aws_id;
+				editTT(event,json);
+				$('#meta-info').toggle();
 				});
 			}
 		
@@ -501,9 +588,9 @@ function updateNames(target,selector)
 			$cell.append(" <span id=toggleTT class=btn>X</span>");
 			}
 		$('#toggleTT',$cell).click(function(event){
-			//$clicked = $(this);
 			aws_id = $cell.attr("aws_id");
-			alert("AWS_ID: "+ aws_id);
+			updateTT(event,"",json);
+			$('#meta-info').toggle();
 			});
 		 
 		}
@@ -515,14 +602,7 @@ function updateNames(target,selector)
 		}
 	l('starting jQuery');
 	
-	url += "style.html";
-	fetchPage(url,loadCSS);
-	url = server_url;
-	url += "edit.html";
-	fetchPage(url,loadEditForm);
-	url = server_url;
-	url += "options.html";
-	fetchPage(url,loadOptions);
+	
 	// main 
 	setup();
 	monitor('#instances_datatable_hook',"td.yui-dt-col-instanceId div span");	
