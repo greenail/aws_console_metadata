@@ -237,7 +237,7 @@ jQuery(document).ready(function($){
 		l("starting Monitor for: "+target+" and: "+selector);
 		var monitor_counter = 0;
 		var originalContent = $(target).text();
-		var stopListen = false;
+		ready();
 		
 		
 		var interval = setInterval(function(){
@@ -250,71 +250,90 @@ jQuery(document).ready(function($){
 			
 			if (originalContent != $(target).text()) 
 				{
+				notReady();
 				l(" --Content Changed-- ");
 				// stop the monitor since we are changing content.
 				clearInterval(interval);
 				originalContent = $(target).text();
 				// show active
-				ready_btn = "<img src='"+server_url+"cooltext446144499.png' onmouseover=\"this.src='"
-					+server_url+"cooltext446144499MouseOver.png';\" onmouseout=\"this.src='"
-					+server_url+"cooltext446144499.png';\" />"
-				$('#top_nav span#activate_aws_hack').html(ready_btn+'</span>');
+				
+				
 				
 				// update names
-				var $ids = $(selector);
-				
-				if ($ids != "") 
-					{
-					id_count = $ids.length;
-					run_count = 0;
-					l("Found "+run_count+" IDs.")
-					$ids.each(function(){
-						run_count++;
-						l("RUN: "+run_count);
-						$cell = $(this);
-						cell_text = $cell.text();
-						if (cell_text.search("X") != -1 || cell_text.search("Y") != -1)
-							{
-							// TODO make this search a bit more robust.
-							l("BIG ERROR: Already changed foolio");
-							setTimeout(function(){monitor(target,selector);},2000);
-							return false;
-							}
-						var url = server_url;
-						var aws_id = getAWS_ID($(this));
-						url += 't_ms?aws_id='+aws_id;
-						l(url);
-						var json = false;
-						
-						if(cache.getJSON(url))
-							{
-							json = cache.getJSON(url);
-							l("Cached Name:"+json.name);
-							changeToName($cell,json);
-										
-							}
-						else	
-							{
-							gmAjax({url: url,method: 'GET',
-								//onload: function(response){updateCell(response,url,$cell,target,selector,run_count);} ,
-								//onload: (function(response){l(run_count+" "+response.responseText);})(run_count),
-								onload: (function (count,mcell,murl){return function (response) {updateCell(response,mcell,murl,count);};})(run_count,$cell,url),
-								onerror: function(response,statusText){handleError(response,statusText);}});
-							}
-						// this sets the timeout for all async to finish loading.
-						if (run_count == id_count)
-								{
-								setTimeout(function(){monitor(target,selector);},2000);	
-								}
-						});
-                    }
-				else	
-					{
-					l("ERROR, nothing matched our selector");
-					}
+				setTimeout((function (t,s){return function(){updateNames(t,s);}})(target,selector),2000);
 				}
 			},500);
 		}
+function notReady()
+	{
+	$('#top_nav span#activate_aws_hack').html('<img src='+server_url+'waiting.gif>');	
+	}
+function ready()
+	{
+	//ready_btn = "<img src='"+server_url+"cooltext446144499.png' onmouseover=\"this.src='"
+	//	+server_url+"cooltext446144499MouseOver.png';\" onmouseout=\"this.src='"
+	//	+server_url+"cooltext446144499.png';\" />"
+	ready_btn = "<b>Ready</b>"
+	$('#top_nav span#activate_aws_hack').html(ready_btn);	
+	}
+function updateNames(target,selector)
+	{
+	var $ids = $(selector);
+				
+	if ($ids != "") 
+		{
+		id_count = $ids.length;
+		run_count = 0;
+		l("Found "+id_count+" IDs with selector: "+selector)
+		$ids.each(function(){
+			run_count++;
+			l("RUN: "+run_count);
+			$cell = $(this);
+			cell_text = $cell.text();
+			if (cell_text.search("X") != -1 || cell_text.search("Y") != -1)
+				{
+				// TODO make this search a bit more robust.
+				l("BIG ERROR: Already changed foolio");
+				//setTimeout(function(){},2000);
+				monitor(target,selector);
+				return false;
+				}
+			var url = server_url;
+			var aws_id = getAWS_ID($(this));
+			url += 't_ms?aws_id='+aws_id;
+			l(url);
+			var json = false;
+			
+			if(cache.getJSON(url))
+				{
+				json = cache.getJSON(url);
+				l("Cached Name:"+json.name);
+				changeToName($cell,json);
+							
+				}
+			else	
+				{
+				gmAjax({url: url,method: 'GET',
+					//onload: function(response){updateCell(response,url,$cell,target,selector,run_count);} ,
+					//onload: (function(response){l(run_count+" "+response.responseText);})(run_count),
+					onload: (function (count,mcell,murl){return function (response) {updateCell(response,mcell,murl,count);};})(run_count,$cell,url),
+					onerror: function(response,statusText){handleError(response,statusText);}});
+				}
+			// this sets the timeout for all async to finish loading.
+			if (run_count == id_count)
+					{
+					l("restarting monitor in 2 seconds");
+					setTimeout(function(){monitor(target,selector);},2000);
+						
+					}
+			});
+                 }
+	else	
+		{
+		l("ERROR, nothing matched our selector");
+		}
+	}
+			
 	function aTest(response)
 		{
 		l(response.responseText);
