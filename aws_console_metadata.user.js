@@ -174,6 +174,12 @@ jQuery(document).ready(function($){
 			//password = GM_getValue("password");
 			$('#password').val(password);
 			}
+		if (username == "" || password == "")
+			{
+			$('#options').show();
+			alert("Please enter a valid username and password!");
+			//return false;
+			}
 		 $('#closeOptions').click(function()
 			{
 			//l("close clicked!",1);
@@ -212,7 +218,54 @@ jQuery(document).ready(function($){
 			l(" --Submit clicked-- ");
 			updateOptions();
 			});
-		//$('#login').click(do_login());
+		$('#login').click(function (){
+			if ((username != $('#username').val()) || (password != $('#password').val()))
+				{
+				l("updating username and password",1)
+				username = $('#username').val();
+				password = $('#password').val();
+				GM_setValue("username", username);
+				GM_setValue("password", password);
+				}
+			do_login();
+			});
+		}
+	function do_login()
+		{
+		l("Trying to login!");
+		 
+		 if (GM_getValue("username"))
+			{
+			username = GM_getValue("username");
+			$('#username').val(username);
+			}
+			if (GM_getValue("password"))
+			{
+			password = GM_getValue("password");
+			$('#password').val(password);
+			}
+		
+		url = server_url;
+		url += "login";
+		 gmAjax({url: url,method: 'PUT',
+		 	data: "login=" + username + "&password=" + password,
+			headers: {"Content-Type": "application/x-www-form-urlencoded"},
+		 	onload: function(response){
+				//$('body').append($('body',response.responseText))
+				l(response.responseText);
+				if (response.responseText.search('Please Login') != -1)
+					{
+					alert("invalid username or password!");
+					l(username+" : "+password)
+					}
+				else
+					{
+					alert("Welcome to Metum!");
+					$('#options').hide();
+					}
+				},
+			onerror: handleError
+			});
 		}
 	function loadEditForm(response)
 		{
@@ -250,7 +303,7 @@ jQuery(document).ready(function($){
 			
 			if (originalContent != $(target).text()) 
 				{
-				notReady();
+				notReady(2000);
 				l(" --Content Changed-- ");
 				// stop the monitor since we are changing content.
 				clearInterval(interval);
@@ -264,9 +317,24 @@ jQuery(document).ready(function($){
 				}
 			},500);
 		}
-function notReady()
+function notReady(timeout)
 	{
-	$('#top_nav span#activate_aws_hack').html('<img src='+server_url+'waiting.gif>');	
+	$('#top_nav span#activate_aws_hack').html('<img src='+server_url+'waiting.gif><span id=readyCount></span>');
+	var $rc = $('#readyCount');
+	var tick = timeout / 100;
+	var interval = setInterval(function(){
+		
+		timeout = timeout - tick;
+		if (timeout <= 0)
+			{
+			clearInterval(interval)
+			}
+		else
+			{
+			$rc.html(timeout);
+			}
+			
+	},timeout/100);	
 	}
 function ready()
 	{
@@ -375,7 +443,16 @@ function updateNames(target,selector)
 		if (response.responseText) 
 			{
 			l("SUCCESS");
-			json = JSON.parse(response.responseText);
+			try	
+				{
+				json = JSON.parse(response.responseText);	
+				}
+			catch(err)
+				{
+				l("JSON parsing error: "+err.description);
+				json = null;	
+				}
+			
 			}
 		if (json != null)
 			{
@@ -388,7 +465,7 @@ function updateNames(target,selector)
 			{
 			// TODO add pretty pic for edit
 			var aws_id = getAWS_ID($cell);
-			$cell.append(" <span id=editTT>?</span>");
+			$cell.append(" <span id=editTT class=btn>?</span>");
 			$('#editTT',$cell).click(function(event){
 				// TODO add call to edit function here.
 				alert("AWS_ID: "+ aws_id);
@@ -403,7 +480,7 @@ function updateNames(target,selector)
 			$cell.attr("aws_id",json.aws_id);
 			// TODO add nice graphic
 			$cell.text(json.name);
-			$cell.append(" <span id=toggleTT>X</span>");
+			$cell.append(" <span id=toggleTT class=btn>X</span>");
 			}
 		$('#toggleTT',$cell).click(function(event){
 			//$clicked = $(this);
@@ -415,6 +492,7 @@ function updateNames(target,selector)
 	
 	function handleError(response,statusText)
 		{
+		alert("http error");
 		l(statusText);
 		}
 	l('starting jQuery');
