@@ -198,7 +198,9 @@ jQuery(document).ready(function($){
 						else	
 							{
 							gmAjax({url: url,method: 'GET',
-								onload: function(response){updateCell(response,url,$cell,target,selector,run_count);} ,
+								//onload: function(response){updateCell(response,url,$cell,target,selector,run_count);} ,
+								//onload: (function(response){l(run_count+" "+response.responseText);})(run_count),
+								onload: (function (count,mcell,murl){return function (response) {updateCell(response,mcell,murl,count);};})(run_count,$cell,url),
 								onerror: function(response,statusText){handleError(response,statusText);}});
 							}
 						// this sets the timeout for all async to finish loading.
@@ -210,6 +212,10 @@ jQuery(document).ready(function($){
                     }
 				}
 			},200);
+		}
+	function aTest(response)
+		{
+		l(response.responseText);
 		}
 	function addCellClick($ids)
 		{
@@ -254,9 +260,9 @@ jQuery(document).ready(function($){
 			return csize;	
 			}
 		}
-	function updateCell(response,url,cell,target,selector,run_count)
+	function updateCell(response,cell,url,run_count)
 		{
-		l("response: Cache Size:"+cache.size);
+		l("response: Cache Size:"+cache.size+" Run Count: "+run_count+" of: "+id_count);
 		l(response.responseText);
 		var json = "";
 		if (response.responseText) 
