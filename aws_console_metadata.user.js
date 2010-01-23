@@ -83,7 +83,12 @@ jQuery(document).ready(function($){
 	var cache = new Object;
 	var debug = true;
 	var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com:80/";
-	
+	var cache = new Cache();
+	var edit_form = "";
+	var url = server_url;
+	var timeout = 0;
+	var username = '';
+	var password = '';
 	// setup log
 	logTarget = $('#yui-layout-bd');
 	if (logTarget == null)
@@ -135,7 +140,83 @@ jQuery(document).ready(function($){
 			$("#volumes_datatable_hook th").text("xxxxx"+test_counter);
 			test_counter++;
 			});		
-		
+		 $('#top_nav').append('<div id=mytop_nav><span id=activate_aws_hack > <img src='+server_url+'waiting.gif> </span><span id=toggleOptions class=r-folink>Options</span><span id=refresh class=folink>Refresh</span><div>')
+ 
+		}
+	function fetchPage(url,callback)
+		{
+		 gmAjax({
+			url: url,
+			method: 'GET',
+			onload: callback,
+			onerror: function(response){
+			                        alert('Fetch Page ERROR' + response.status );
+			                     }
+			});
+		}
+	function loadCSS(response)
+		{
+		 $('head').append(response.responseText);	
+		}
+	function loadOptions(response)
+		{
+		$('body').prepend(response.responseText);
+		$('#options').hide();
+		// populate preferences
+		$('#timeout').val(timeout);	
+		 if (GM_getValue("username"))
+			{
+			//username = GM_getValue("username");
+			$('#username').val(username);
+			}
+		if (GM_getValue("password"))
+			{
+			//password = GM_getValue("password");
+			$('#password').val(password);
+			}
+		 $('#closeOptions').click(function()
+			{
+			//l("close clicked!",1);
+			$('#options').hide();
+			});
+		$('#toggleOptions').click(function ()
+			{
+			//l("toggled!");
+			$('#options').toggle();
+			});
+		$('#refresh').click(function ()
+			{
+			l("refresh!");
+			originalContent = "FOOOOOOOOOOOOOOOOO";
+			});
+		$('#logToggle').click(function()
+			{												
+			$('#mylog').toggle();
+			l("Log Toggled",1);
+			});
+		$('#nameToggle').click(function()
+			{
+			l("Name Toggled",1);
+			});
+		$('#debugToggle').click(function()
+			{
+			if (debug == false)
+				{
+				debug = true;
+				}
+			else { debug = false;}
+			l("Debug Toggled",1);
+			});
+		$('#optionSubmit').click(function()
+			{
+			l(" --Submit clicked-- ");
+			updateOptions();
+			});
+		//$('#login').click(do_login());
+		}
+	function loadEditForm(response)
+		{
+		edit_form = response.responseText;	
 		}
 	function getAWS_ID(obj)
 		{
@@ -182,6 +263,14 @@ jQuery(document).ready(function($){
 					$ids.each(function(){
 						run_count++;
 						$cell = $(this);
+						cell_text = $cell.text();
+						if (cell_text.search("X") != -1 || cell_text.search("Y") != -1)
+							{
+							// TODO make this search a bit more robust.
+							l("BIG ERROR: Already changed foolio");
+							setTimeout(function(){monitor(target,selector);},2000);
+							return false;
+							}
 						var url = server_url;
 						var aws_id = getAWS_ID($(this));
 						url += 't_ms?aws_id='+aws_id;
@@ -297,7 +386,15 @@ jQuery(document).ready(function($){
 		l(statusText);
 		}
 	l('starting jQuery');
-	var cache = new Cache();
+	
+	url += "style.html";
+	fetchPage(url,loadCSS);
+	url = server_url;
+	url += "edit.html";
+	fetchPage(url,loadEditForm);
+	url = server_url;
+	url += "options.html";
+	fetchPage(url,loadOptions);
 	// main 
 	setup();
 	monitor('#instances_datatable_hook',"td.yui-dt-col-instanceId div span");	
