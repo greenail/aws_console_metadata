@@ -151,60 +151,149 @@ jQuery(document).ready(function($){
 			return id;
 			}
 		}	
-	function monitor(target,cell)
+	function monitor(target,selector)
 		{
-		l("starting Monitor for: "+target+" and: "+cell);
+		l("starting Monitor for: "+target+" and: "+selector);
+		var monitor_counter = 0;
 		var originalContent = $(target).text();
 		var stopListen = false;
+		
+		
 		var interval = setInterval(function(){
+			monitor_counter ++;
+			
+			if($("#monitor_counter"))
+				{
+				$("#monitor_counter span").text(monitor_counter);	
+				}
+			
 			if (originalContent != $(target).text()) 
 				{
 				l(" --Content Changed-- ");
+				// stop the monitor since we are changing content.
+				clearInterval(interval);
 				originalContent = $(target).text();
-				updateCell(cell);
-				var $ids = $(cell);
+				var $ids = $(selector);
+				addCellClick($ids);
 				if ($ids != "") 
 					{
 					id_count = $ids.length;
+					run_count = 0;
 					$ids.each(function(){
+						run_count++;
+						$cell = $(this);
 						var url = server_url;
 						var aws_id = getAWS_ID($(this));
 						url += 't_ms?aws_id='+aws_id;
-						l(url)
-						gmAjax({url: url,method: 'GET',
-							onload: function(response,statusText){updateCell(response,statusText);},
-							onerror: function(response,statusText){handleError(response,statusText);}});
+						l(url);
+						var json = false;
+						
+						if(cache.getJSON(url))
+							{
+							json = cache.getJSON(url);
+							l("Cached Name:"+json.name);
+							changeToName($cell,json);
+										
+							}
+						else	
+							{
+							gmAjax({url: url,method: 'GET',
+								onload: function(response){updateCell(response,url,$cell,target,selector,run_count);} ,
+								onerror: function(response,statusText){handleError(response,statusText);}});
+							}
+						// this sets the timeout for all async to finish loading.
+						if (run_count == id_count)
+								{
+								setTimeout(function(){monitor(target,selector);},2000);	
+								}
 						});
                     }
 				}
 			},200);
 		}
-	function updateCell(response,statusText)
+	function addCellClick($ids)
 		{
-		l("response: ");
+		// add click handler using event delegation
+		$ids.each(function (){
+			var cell = $(this);
+			if (!cell.attr("aws_id"))
+				{
+				cell.click(function(event){
+					//$clicked = $(this);
+					aws_id = $(this).attr("aws_id");
+					alert("AWS_ID: "+ aws_id);
+					});
+				}
+			});
+		}
+	function Cache()
+		{
+		var c = new Object;
+		var csize = 0;
+		this.getJSON = function(url)
+			{
+			if (c[url])
+				{
+				l("CACHE HIT");
+				return c[url];
+				}
+			else
+				{
+				l("CACHE MISS");
+				return false;
+				}
+			}	
+		this.setJSON = function(url,json)
+			{
+			csize++;
+			l("set CACHE: "+url+ " "+json.name);
+			c[url] = json;	
+			}
+		this.size
+			{
+			return csize;	
+			}
+		}
+	function updateCell(response,url,cell,target,selector,run_count)
+		{
+		l("response: Cache Size:"+cache.size);
 		l(response.responseText);
 		var json = "";
 		if (response.responseText) 
 			{
+			l("SUCCESS");
 			json = JSON.parse(response.responseText);
 			}
 		if (json != null)
 			{
 			//p("Name: "+json.name);
-			l("Name: "+json.name);	
+			l("Name: "+json.name);
+			cache.setJSON(url,json);
+			changeToName(cell,json);
 			}
+		
 		}
+	function changeToName($cell,json)
+		{
+		if (!$cell.attr("aws_id"))
+			{
+			$cell.attr("aws_id",json.aws_id)
+			$cell.text(json.name);	
+			}
+		 
+		}
+	
 	function handleError(response,statusText)
 		{
 		l(statusText);
 		}
 	l('starting jQuery');
-	
+	var cache = new Cache();
 	// main 
 	setup();
 	monitor('#instances_datatable_hook',"td.yui-dt-col-instanceId div span");	
 	monitor('#volumes_datatable_hook',"td.yui-dt-col-volumeId div span");
-	
+	$('body').append("<span id=monitor_counter>Count: <span>0</span></div>");
 	l("exit main context");
 	// end jQuery
 }); 
