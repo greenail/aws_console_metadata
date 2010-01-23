@@ -254,14 +254,23 @@ jQuery(document).ready(function($){
 				// stop the monitor since we are changing content.
 				clearInterval(interval);
 				originalContent = $(target).text();
+				// show active
+				ready_btn = "<img src='"+server_url+"cooltext446144499.png' onmouseover=\"this.src='"
+					+server_url+"cooltext446144499MouseOver.png';\" onmouseout=\"this.src='"
+					+server_url+"cooltext446144499.png';\" />"
+				$('#top_nav span#activate_aws_hack').html(ready_btn+'</span>');
+				
+				// update names
 				var $ids = $(selector);
 				
 				if ($ids != "") 
 					{
 					id_count = $ids.length;
 					run_count = 0;
+					l("Found "+run_count+" IDs.")
 					$ids.each(function(){
 						run_count++;
+						l("RUN: "+run_count);
 						$cell = $(this);
 						cell_text = $cell.text();
 						if (cell_text.search("X") != -1 || cell_text.search("Y") != -1)
@@ -299,8 +308,12 @@ jQuery(document).ready(function($){
 								}
 						});
                     }
+				else	
+					{
+					l("ERROR, nothing matched our selector");
+					}
 				}
-			},200);
+			},500);
 		}
 	function aTest(response)
 		{
@@ -399,7 +412,17 @@ jQuery(document).ready(function($){
 	setup();
 	monitor('#instances_datatable_hook',"td.yui-dt-col-instanceId div span");	
 	monitor('#volumes_datatable_hook',"td.yui-dt-col-volumeId div span");
-	$('body').append("<span id=monitor_counter>Count: <span>0</span></div>");
+	if(debug)
+		{
+		if ($('.yui-content'))
+			{
+			$('.yui-content').append("<span id=monitor_counter>Count: <span>0</span></div>");	
+			}
+		else
+			{
+			$('body').append("<span id=monitor_counter>Count: <span>0</span></div>");	
+			}
+		}	
 	l("exit main context");
 	// end jQuery
 }); 
