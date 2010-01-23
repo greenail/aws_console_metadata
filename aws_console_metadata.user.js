@@ -66,6 +66,23 @@ function gmAjax(obj)
 	{
 	ajaxQueue.push(obj);
 	}
+function setLogin()
+	{
+	console.log(username+" : "+password)
+	GM_setValue("password", password);
+	GM_setValue("username", username);
+	}
+function getLogin()
+	{
+	username = GM_getValue("username");
+	password = GM_getValue("password");
+	console.log(username+" : "+password)
+	//return u,p;
+	}
+var username;
+var password;
+//window.setTimeout(getLogin,10)
+getLogin();
 // start jQuery Setup
 //alert("FOOOO");
 var script = document.createElement('script');
@@ -87,8 +104,7 @@ jQuery(document).ready(function($){
 	var edit_form = "";
 	var url = server_url;
 	var timeout = 0;
-	var username = '';
-	var password = '';
+	
 	// setup log
 	logTarget = $('#yui-layout-bd');
 	if (logTarget == null)
@@ -164,22 +180,32 @@ jQuery(document).ready(function($){
 		$('#options').hide();
 		// populate preferences
 		$('#timeout').val(timeout);	
-		 if (GM_getValue("username"))
+		getLogin();
+		 if (username != undefined)
 			{
 			//username = GM_getValue("username");
+			l("USERNAME: "+username);
 			$('#username').val(username);
 			}
-		if (GM_getValue("password"))
+		if (password != undefined)
 			{
 			//password = GM_getValue("password");
+			l("PASSWORD: "+password);
 			$('#password').val(password);
 			}
-		if (username == "" || password == "")
+		if (username == undefined)
 			{
 			$('#options').show();
 			alert("Please enter a valid username and password!");
 			//return false;
 			}
+		if (password == undefined)
+			{
+			$('#options').show();
+			alert("Please enter a valid username and password!");
+			//return false;
+			}
+		do_login();
 		 $('#closeOptions').click(function()
 			{
 			//l("close clicked!",1);
@@ -218,33 +244,25 @@ jQuery(document).ready(function($){
 			l(" --Submit clicked-- ");
 			updateOptions();
 			});
+		$('#regiser').html('<a href='+server_url+'/people/new>Create New Account</a>');
 		$('#login').click(function (){
 			if ((username != $('#username').val()) || (password != $('#password').val()))
 				{
-				l("updating username and password",1)
+				
 				username = $('#username').val();
 				password = $('#password').val();
-				GM_setValue("username", username);
-				GM_setValue("password", password);
+				l("updating username and password"+username +" : "+password,1);
+				// hack for stange GM checks...
+				window.setTimeout(setLogin,10);
+				
 				}
 			do_login();
 			});
 		}
+	
 	function do_login()
 		{
 		l("Trying to login!");
-		 
-		 if (GM_getValue("username"))
-			{
-			username = GM_getValue("username");
-			$('#username').val(username);
-			}
-			if (GM_getValue("password"))
-			{
-			password = GM_getValue("password");
-			$('#password').val(password);
-			}
-		
 		url = server_url;
 		url += "login";
 		 gmAjax({url: url,method: 'PUT',
@@ -252,11 +270,11 @@ jQuery(document).ready(function($){
 			headers: {"Content-Type": "application/x-www-form-urlencoded"},
 		 	onload: function(response){
 				//$('body').append($('body',response.responseText))
-				l(response.responseText);
+				//l(response.responseText);
 				if (response.responseText.search('Please Login') != -1)
 					{
 					alert("invalid username or password!");
-					l(username+" : "+password)
+					l(username+" : "+password);
 					}
 				else
 					{
