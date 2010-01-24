@@ -103,7 +103,7 @@ jQuery(document).ready(function($){
 	var cache = new Cache();
 	var edit_form = "";
 	var url = server_url;
-	var timeout = 0;
+	var timeout = 500;
 	
 	// setup log
 	logTarget = $('#yui-layout-bd');
@@ -165,6 +165,7 @@ jQuery(document).ready(function($){
 		url = server_url;
 		url += "options.html";
 		fetchPage(url,loadOptions);
+		
 		makeTT();
 		}
 	function fetchPage(url,callback)
@@ -189,6 +190,7 @@ jQuery(document).ready(function($){
 		// populate preferences
 		$('#timeout').val(timeout);	
 		getLogin();
+		$('#register').html("<a href="+server_url+"people/new/>Register New Account</a>");
 		 if (username != undefined)
 			{
 			//username = GM_getValue("username");
@@ -333,10 +335,12 @@ jQuery(document).ready(function($){
 	function updateTT(e,dns,json)
 		{
 		// construct tooltip
+		
 		var html = '<b>Meta Data for: '+json.aws_id+'</b><span id=close_tip class=folink>X</span>';
 		html += '<p><b>Name: </b>'+ json.name +'</p><hr>';
 		html += '<p><b>Description: </b>'+ json.description +'</p>';
 		html += '<p>'+ json.id +'</p>';
+		html += '<p><span class=r-folink id=edit>Edit</span>';
 		// don't put clippy object or browse link if there is no DNS
 		if (dns != "")
 			{
@@ -345,29 +349,64 @@ jQuery(document).ready(function($){
 			html += '<a href=http://'+dns+'>Browse</a>';
 			}
 		$('#meta-info').css('top', e.pageY + -20).css('left', e.pageX + 40);
-		$('#meta-info').html(html)
-		//$('#meta-info').html(html).fadeIn(400);
+		$('#meta-info').html(html);
+		$('#edit').attr("json",JSON.stringify(json));
+		//$('#meta-info').append("<div id=json>"+JSON.stringify(json)+"</div>");
 		// close tooltip
 		$('span#close_tip').click(function(){
 			l(" --close tip clicked-- ");
 			$('#meta-info').hide();
 			});
-		
+		$('#edit').click(function(){
+			json = JSON.parse($('#edit').attr("json"));
+			$('#meta-info').html(edit_form);
+			$('#edit_form_name').val(json.name);
+			editTT(e,json); 
+		});
 		}
 	function editTT(e,json)
 		{
+		l(JSON.stringify(json));
+		l(json.name);
+		//if (json.name != undefined)
+		if(false)
+			{
+			//$('input#edit_form_name').val(json.name);
+			$('#edit_form_name').attr("value",json.name);
+			}
+		if(true)
+		//if (json.description != undefined)
+			{
+			$('textarea#edit_form_description').val(json.description);
+			}
 		$('#meta-info').css('top', e.pageY + -20).css('left', e.pageX + 40);
-		$('#meta-info').html(edit_form);
+		
 		$('#edit_form_submit').click(function(){
 			l("Edit Form Submit Clicked",1);
 			json.name = $('#edit_form_name').val();
 			json.description = $('#edit_form_description').val();
-			sendJSON(json);
+			json.group = $('#edit_form_group').val();
+			//l(JSON.stringify(json));
+			sendJSON(json,e);
 			});
 		} // end makeTT (make tooltip)
-	function sendJSON(json)
+	function sendJSON(json,e)
 		{
-			
+		 url = server_url;
+		url += "t_ms/"+json.aws_id;
+		 gmAjax({
+			url: url,
+			method: 'PUT',
+			data: JSON.stringify(json),
+			onload: function(response){
+			l(response.responseText);
+			updateTT(e,"",json);
+			 
+			},
+			onerror: function(response){
+			console.error('ERROR' + response.status);
+			}
+			});	
 		}	
 	function loadEditForm(response)
 		{
@@ -405,7 +444,7 @@ jQuery(document).ready(function($){
 			
 			if (originalContent != $(target).text()) 
 				{
-				notReady(2000);
+				notReady(timeout);
 				l(" --Content Changed-- ");
 				// stop the monitor since we are changing content.
 				clearInterval(interval);
@@ -415,7 +454,7 @@ jQuery(document).ready(function($){
 				
 				
 				// update names
-				setTimeout((function (t,s){return function(){updateNames(t,s);}})(target,selector),2000);
+				setTimeout((function (t,s){return function(){updateNames(t,s);}})(target,selector),timeout);
 				}
 			},500);
 		}
