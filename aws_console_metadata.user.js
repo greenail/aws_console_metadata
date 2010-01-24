@@ -361,46 +361,48 @@ jQuery(document).ready(function($){
 			json = JSON.parse($('#edit').attr("json"));
 			$('#meta-info').html(edit_form);
 			$('#edit_form_name').val(json.name);
+			$('textarea#edit_form_description').val(json.description);
+			json.url = server_url + "t_ms/"+json.aws_id;
+			json.httpType = "PUT";
 			editTT(e,json); 
 		});
 		}
 	function editTT(e,json)
 		{
-		l(JSON.stringify(json));
-		l(json.name);
-		//if (json.name != undefined)
-		if(false)
-			{
-			//$('input#edit_form_name').val(json.name);
-			$('#edit_form_name').attr("value",json.name);
-			}
-		if(true)
-		//if (json.description != undefined)
-			{
-			$('textarea#edit_form_description').val(json.description);
-			}
+		l(json.aws_id);
 		$('#meta-info').css('top', e.pageY + -20).css('left', e.pageX + 40);
-		
 		$('#edit_form_submit').click(function(){
 			l("Edit Form Submit Clicked",1);
 			json.name = $('#edit_form_name').val();
 			json.description = $('#edit_form_description').val();
 			json.group = $('#edit_form_group').val();
-			//l(JSON.stringify(json));
+			l(JSON.stringify(json));
 			sendJSON(json,e);
 			});
 		} // end makeTT (make tooltip)
 	function sendJSON(json,e)
 		{
-		 url = server_url;
-		url += "t_ms/"+json.aws_id;
+		var url = json.url;
+		json.url = undefined;
+		var httpType = json.httpType;
+		json.httpType = undefined;
+		l("Sending JSON to: "+url);
+		l("JSON: "+JSON.stringify(json));
 		 gmAjax({
 			url: url,
-			method: 'PUT',
+			method: httpType,
 			data: JSON.stringify(json),
 			onload: function(response){
-			l(response.responseText);
-			updateTT(e,"",json);
+			//l(response.responseText);
+			if (response.responseText.search("ERROR") != -1)
+				{
+				alert(response.responseText);	
+				}
+			else
+				{
+				updateTT(e,"",json);	
+				}
+			
 			 
 			},
 			onerror: function(response){
@@ -611,8 +613,13 @@ function updateNames(target,selector)
 				// TODO add call to edit function here.
 				json = new Object;
 				json.aws_id = aws_id;
-				editTT(event,json);
+				//json.description = "";
+				
+				$('#meta-info').html(edit_form);
 				$('#meta-info').toggle();
+				json.url = server_url+"t_ms";
+				json.httpType = "POST";
+				editTT(event,json);
 				});
 			}
 		
