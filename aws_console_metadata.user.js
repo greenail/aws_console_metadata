@@ -98,7 +98,7 @@ jQuery(document).ready(function($){
 	
 	// setup variables
 	var cache = new Object;
-	var debug = true;
+	var debug = false;
 	var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com:80/";
 	var cache = new Cache();
 	var edit_form = "";
@@ -182,6 +182,11 @@ jQuery(document).ready(function($){
 	function loadCSS(response)
 		{
 		 $('head').append(response.responseText);	
+		}
+	function loadTT(response)
+		{
+		$('body').append(response.responseText);
+		$('#meta-info').hide();		
 		}
 	function loadOptions(response)
 		{
@@ -323,30 +328,29 @@ jQuery(document).ready(function($){
 		}// end clippy
 	function makeTT()
 		{
-		var html = '<div id="meta-info">';
-		html += '<b>Meta Data for: </b><span id=close_tip class=folink>X</span>';
-		html += '<p><b>Name: </b></p><hr>';
-		html += '<p><b>Description: </b></p>';
-		html += '<p></p>';
-		html += '</div>';
-		$('body').append(html);
-		$('#meta-info').hide();	
+		var url = server_url + "tt.html";
+		fetchPage(url,loadTT);
+		
 		}
-	function updateTT(e,dns,json)
+	function updateTT(e,json)
 		{
 		// construct tooltip
-		
-		var html = '<b>Meta Data for: '+json.aws_id+'</b><span id=close_tip class=folink>X</span>';
-		html += '<p><b>Name: </b>'+ json.name +'</p><hr>';
-		html += '<p><b>Description: </b>'+ json.description +'</p>';
-		html += '<p>'+ json.id +'</p>';
+		var html = '<span id=close_tip class=folink>X</span>';
+		html += '<fieldset>';
+		html += '<legend>MetaData</legend>';
+		html += '<label>Meta Data for: </label>'+json.aws_id+'<hr/>';
+		html += '<label>Name: </label><br><p>'+ json.name +'</p><hr/>';
+		html += '<label>Description: </label><br><p>'+ json.description +'</p><br/>';
+		html += '</fieldset>';
 		html += '<p><span class=r-folink id=edit>Edit</span>';
+		
+		
 		// don't put clippy object or browse link if there is no DNS
-		if (dns != "")
+		if (json.dns != "")
 			{
-			var clippyObject = clippy(dns);
+			var clippyObject = clippy(json.dns);
 			html += clippyObject;
-			html += '<a href=http://'+dns+'>Browse</a>';
+			html += '<a href=http://'+json.dns+'>Browse</a>';
 			}
 		$('#meta-info').css('top', e.pageY + -20).css('left', e.pageX + 40);
 		$('#meta-info').html(html);
@@ -400,7 +404,7 @@ jQuery(document).ready(function($){
 				}
 			else
 				{
-				updateTT(e,"",json);	
+				updateTT(e,json);	
 				}
 			
 			 
@@ -635,7 +639,13 @@ function updateNames(target,selector)
 			}
 		$('#toggleTT',$cell).click(function(event){
 			aws_id = $cell.attr("aws_id");
-			updateTT(event,"",json);
+			var $trs = $cell.parent().parent().parent();
+			var dns = $trs.children('td.yui-dt-col-dnsName').text();
+			if (dns != undefined)
+				{
+				json.dns = dns;
+				}
+			updateTT(event,json);
 			$('#meta-info').toggle();
 			});
 		 
