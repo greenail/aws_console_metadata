@@ -1,1 +1,5 @@
 Todo List:
+
+May want to add an export function so you can back your info up
+
+Need to add additional targets to monitor or update such as the Attachment info for volumes, and the ELB AWS_IDs

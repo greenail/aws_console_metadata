@@ -390,6 +390,8 @@ jQuery(document).ready(function($){
 		json.url = undefined;
 		var httpType = json.httpType;
 		json.httpType = undefined;
+		// TODO may want to add some history here
+		json.dns = undefined;
 		l("Sending JSON to: "+url);
 		l("JSON: "+JSON.stringify(json));
 		 gmAjax({
@@ -404,7 +406,10 @@ jQuery(document).ready(function($){
 				}
 			else
 				{
-				updateTT(e,json);	
+				//updateTT(e,json);
+				// TODO: need to update name of cell we just edited!
+				changeToName($(e.target).parent(),json)
+				$('#meta-info').hide();	
 				}
 			
 			 
