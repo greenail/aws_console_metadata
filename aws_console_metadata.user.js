@@ -68,7 +68,19 @@ function gmAjax(obj)
 	}
 function setLogin()
 	{
-	console.log(username+" : "+password)
+	if(debug)
+			{
+			//console.log(text);
+			if(unsafeWindow.console != undefined)
+				{
+				unsafeWindow.console.log(username+" : "+password);	
+				}
+			
+			//log.append(text+'<br/>');	
+			}
+			
+		
+	
 	GM_setValue("password", password);
 	GM_setValue("username", username);
 	}
@@ -76,7 +88,16 @@ function getLogin()
 	{
 	username = GM_getValue("username");
 	password = GM_getValue("password");
-	console.log(username+" : "+password)
+		if(debug)
+			{
+			//console.log(text);
+			if(unsafeWindow.console != undefined)
+				{
+				unsafeWindow.console.log(username+" : "+password);	
+				}
+			
+			//log.append(text+'<br/>');	
+			}
 	//return u,p;
 	}
 var username;
@@ -99,7 +120,7 @@ jQuery(document).ready(function($){
 	// setup variables
 	var cache = new Object;
 	var debug = false;
-	var server_url = "http://ec2-174-129-173-128.compute-1.amazonaws.com:80/";
+	var server_url = "http://174.129.23.24:443/";
 	var cache = new Cache();
 	var edit_form = "";
 	var url = server_url;
